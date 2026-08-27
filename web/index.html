@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kusdby Expense Tracker</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <section id="loginPanel" class="login-panel">
+    <form class="modal login-card" onsubmit="login(event)">
+      <p class="eyebrow">Private finance app</p>
+      <h1>Login dulu</h1>
+      <p class="muted">Masuk pakai user awal <code>maskus</code>. Password diatur dari environment <code>ADMIN_PASSWORD</code> saat server dijalankan.</p>
+      <label>Username
+        <input id="loginUsername" value="maskus" autocomplete="username" required />
+      </label>
+      <label>Password
+        <input id="loginPassword" type="password" autocomplete="current-password" required />
+      </label>
+      <button class="primary" type="submit">Masuk</button>
+      <p id="loginError" class="error"></p>
+    </form>
+  </section>
+
+  <div id="appShell" class="app-shell hidden">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Personal Finance Dashboard</p>
+        <h1>Expense Tracker</h1>
+        <p id="periodText" class="muted">Loading periode...</p>
+      </div>
+      <button class="primary" onclick="openTransactionForm()">+ Transaksi</button>
+    </header>
+
+    <main>
+      <section class="cards">
+        <article class="card highlight">
+          <span>Total Saldo</span>
+          <strong id="totalBalance">Rp0</strong>
+        </article>
+        <article class="card">
+          <span>Pengeluaran Periode</span>
+          <strong id="periodExpense">Rp0</strong>
+        </article>
+        <article class="card">
+          <span>Pemasukan Periode</span>
+          <strong id="periodIncome">Rp0</strong>
+        </article>
+        <article class="card">
+          <span>Net Cashflow</span>
+          <strong id="netCashflow">Rp0</strong>
+        </article>
+      </section>
+
+      <section class="grid two-col">
+        <article class="panel">
+          <div class="panel-title">
+            <h2>Akun Saldo</h2>
+            <button class="ghost" onclick="openAccountForm()">Tambah</button>
+          </div>
+          <div id="accountList" class="list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-title">
+            <h2>Pengeluaran per Kategori</h2>
+          </div>
+          <div id="categoryChart" class="list"></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title wrap">
+          <h2>Transaksi</h2>
+          <div class="filters">
+            <input id="searchInput" type="search" placeholder="Search catatan/kategori/nominal" />
+            <select id="accountFilter"><option value="">Semua akun</option></select>
+            <select id="categoryFilter"><option value="">Semua kategori</option></select>
+            <button class="ghost" onclick="loadTransactions()">Filter</button>
+          </div>
+        </div>
+        <div id="transactionList" class="transactions"></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="transactionDialog">
+    <form method="dialog" class="modal" onsubmit="saveTransaction(event)">
+      <h2>Tambah Transaksi</h2>
+      <label>Tipe
+        <select id="txType" required onchange="syncTransactionFields()">
+          <option value="expense">Pengeluaran</option>
+          <option value="income">Pemasukan</option>
+          <option value="transfer">Transfer</option>
+        </select>
+      </label>
+      <label>Nominal
+        <input id="txAmount" inputmode="numeric" placeholder="125000" required />
+      </label>
+      <label>Akun sumber
+        <select id="txSource"></select>
+      </label>
+      <label>Akun tujuan
+        <select id="txDestination"></select>
+      </label>
+      <label>Kategori
+        <select id="txCategory"></select>
+      </label>
+      <label>Catatan
+        <input id="txNote" placeholder="contoh: makan siang" />
+      </label>
+      <div class="actions">
+        <button type="button" class="ghost" onclick="transactionDialog.close()">Batal</button>
+        <button class="primary" type="submit">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="accountDialog">
+    <form method="dialog" class="modal" onsubmit="saveAccount(event)">
+      <h2>Tambah Akun</h2>
+      <label>Nama akun
+        <input id="accountName" placeholder="BCA / BRI / Jenius" required />
+      </label>
+      <label>Tipe
+        <select id="accountType">
+          <option value="bank">Bank</option>
+          <option value="e-wallet">E-wallet</option>
+          <option value="cash">Cash</option>
+          <option value="investasi liquid">Investasi liquid</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <label>Saldo awal
+        <input id="accountInitial" inputmode="numeric" value="0" />
+      </label>
+      <div class="actions">
+        <button type="button" class="ghost" onclick="accountDialog.close()">Batal</button>
+        <button class="primary" type="submit">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js"></script>
+</body>
+</html>
