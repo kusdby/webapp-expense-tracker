@@ -14,7 +14,7 @@ class ServerSecurityTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as db:
             FinanceHandler.repo = FinanceRepository(db.name)
             FinanceHandler.repo.initialize()
-            FinanceHandler.user_id = FinanceHandler.repo.ensure_demo_user("testpass")
+            FinanceHandler.user_id = FinanceHandler.repo.ensure_initial_user("testuser", "testpass")
             FinanceHandler.sessions = {}
             httpd = ThreadingHTTPServer(("127.0.0.1", 0), FinanceHandler)
             thread = threading.Thread(target=httpd.serve_forever, daemon=True)

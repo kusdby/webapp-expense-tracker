@@ -100,12 +100,12 @@ class FinanceRepository:
             return row["id"]
         return None
 
-    def ensure_demo_user(self, password: str) -> str:
+    def ensure_initial_user(self, username: str, password: str, name: str | None = None) -> str:
         with self._connect() as conn:
-            row = conn.execute("SELECT id FROM users WHERE username = 'maskus' LIMIT 1").fetchone()
+            row = conn.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,)).fetchone()
             if row:
                 return row["id"]
-        user_id = self.create_user("Maskus", "maskus", password=password)
+        user_id = self.create_user(name or username, username, password=password)
         bri = self.create_account(user_id, "BRI", "bank", 1_000_000, color="#3b82f6")
         jenius = self.create_account(user_id, "Jenius", "bank", 500_000, color="#06b6d4")
         gopay = self.create_account(user_id, "GoPay", "e-wallet", 100_000, color="#22c55e")
