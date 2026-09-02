@@ -60,6 +60,18 @@ class FinanceHandler(BaseHTTPRequestHandler):
         except PermissionError:
             self._json({"error": "Login required"}, HTTPStatus.UNAUTHORIZED)
 
+    def do_PUT(self) -> None:
+        try:
+            self._do_PUT()
+        except PermissionError:
+            self._json({"error": "Login required"}, HTTPStatus.UNAUTHORIZED)
+
+    def do_DELETE(self) -> None:
+        try:
+            self._do_DELETE()
+        except PermissionError:
+            self._json({"error": "Login required"}, HTTPStatus.UNAUTHORIZED)
+
     def _do_POST(self) -> None:
         if self.path == "/api/login":
             data = self._read_json()
@@ -106,6 +118,31 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 note=data.get("note", ""),
             )
             self._json({"id": tx_id}, HTTPStatus.CREATED)
+            return
+        self.send_error(HTTPStatus.NOT_FOUND)
+
+    def _do_PUT(self) -> None:
+        parsed = urlparse(self.path)
+        account_id = _account_id_from_path(parsed.path, suffix="/balance")
+        if account_id:
+            data = self._read_json()
+            updated = self.repo.set_account_balance(self._require_user_id(), account_id, _rupiah_to_int(data.get("balance", 0)))
+            if not updated:
+                self._json({"error": "Account not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
+        self.send_error(HTTPStatus.NOT_FOUND)
+
+    def _do_DELETE(self) -> None:
+        parsed = urlparse(self.path)
+        account_id = _account_id_from_path(parsed.path)
+        if account_id:
+            deleted = self.repo.delete_account(self._require_user_id(), account_id)
+            if not deleted:
+                self._json({"error": "Account not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
             return
         self.send_error(HTTPStatus.NOT_FOUND)
 
@@ -166,6 +203,16 @@ def run(host: str = "0.0.0.0", port: int = 8089) -> None:
 def _first(params: dict[str, list[str]], key: str) -> str | None:
     values = params.get(key) or []
     return values[0] if values and values[0] else None
+
+
+def _account_id_from_path(path: str, suffix: str = "") -> str | None:
+    prefix = "/api/accounts/"
+    if not path.startswith(prefix) or (suffix and not path.endswith(suffix)):
+        return None
+    account_id = path[len(prefix):]
+    if suffix:
+        account_id = account_id[:-len(suffix)]
+    return account_id or None
 
 
 def _rupiah_to_int(value) -> int:

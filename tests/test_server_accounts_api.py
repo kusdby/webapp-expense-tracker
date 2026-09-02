@@ -1,0 +1,70 @@
+import json
+import tempfile
+import threading
+import unittest
+import urllib.error
+import urllib.request
+from http.server import ThreadingHTTPServer
+
+from app.repository import FinanceRepository
+from app.server import FinanceHandler
+
+
+class ServerAccountsApiTests(unittest.TestCase):
+    def test_user_can_update_current_account_balance_and_delete_account_via_api(self):
+        with tempfile.NamedTemporaryFile() as db:
+            FinanceHandler.repo = FinanceRepository(db.name)
+            FinanceHandler.repo.initialize()
+            user_id = FinanceHandler.repo.create_user("Maskus", "maskus", password="secret123")
+            account_id = FinanceHandler.repo.create_account(user_id, "BCA", "bank", 1_000_000)
+            category_id = FinanceHandler.repo.create_category(user_id, "Makan", "expense")
+            FinanceHandler.repo.create_transaction(user_id, "expense", 250_000, source_account_id=account_id, category_id=category_id)
+            FinanceHandler.user_id = user_id
+            FinanceHandler.sessions = {}
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), FinanceHandler)
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                base_url = f"http://127.0.0.1:{httpd.server_address[1]}"
+                cookie = self._login(base_url)
+
+                self._json_request(
+                    f"{base_url}/api/accounts/{account_id}/balance",
+                    method="PUT",
+                    payload={"balance": 2_000_000},
+                    cookie=cookie,
+                )
+                summary = self._json_request(f"{base_url}/api/summary", cookie=cookie)
+                account = next(item for item in summary["accounts"] if item["id"] == account_id)
+                self.assertEqual(account["balance"], 2_000_000)
+
+                self._json_request(f"{base_url}/api/accounts/{account_id}", method="DELETE", cookie=cookie)
+                summary = self._json_request(f"{base_url}/api/summary", cookie=cookie)
+                self.assertNotIn(account_id, [item["id"] for item in summary["accounts"]])
+            finally:
+                httpd.shutdown()
+                thread.join(timeout=2)
+                httpd.server_close()
+
+    def _login(self, base_url: str) -> str:
+        req = urllib.request.Request(
+            f"{base_url}/api/login",
+            data=json.dumps({"username": "maskus", "password": "secret123"}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=2) as res:
+            return res.headers["Set-Cookie"].split(";", 1)[0]
+
+    def _json_request(self, url: str, *, method: str = "GET", payload: dict | None = None, cookie: str | None = None):
+        headers = {"Content-Type": "application/json"}
+        if cookie:
+            headers["Cookie"] = cookie
+        data = json.dumps(payload).encode("utf-8") if payload is not None else None
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
+        with urllib.request.urlopen(req, timeout=2) as res:
+            return json.loads(res.read().decode("utf-8") or "{}")
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -170,6 +170,26 @@ class FinanceRepository:
             rows = conn.execute("SELECT * FROM accounts WHERE user_id = ? AND is_archived = 0 ORDER BY created_at", (user_id,)).fetchall()
         return [dict(row) for row in rows]
 
+    def set_account_balance(self, user_id: str, account_id: str, target_balance: int) -> bool:
+        balances = self.get_balances(user_id)
+        if account_id not in balances:
+            return False
+        adjustment = int(target_balance) - balances[account_id]
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE accounts SET initial_balance = initial_balance + ? WHERE id = ? AND user_id = ? AND is_archived = 0",
+                (adjustment, account_id, user_id),
+            )
+        return cur.rowcount == 1
+
+    def delete_account(self, user_id: str, account_id: str) -> bool:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE accounts SET is_archived = 1 WHERE id = ? AND user_id = ? AND is_archived = 0",
+                (account_id, user_id),
+            )
+        return cur.rowcount == 1
+
     def list_categories(self, user_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:
             rows = conn.execute("SELECT * FROM categories WHERE user_id = ? AND is_active = 1 ORDER BY type, name", (user_id,)).fetchall()
@@ -208,10 +228,15 @@ class FinanceRepository:
 
     def get_balances(self, user_id: str) -> dict[str, int]:
         accounts = [Account(id=row["id"], name=row["name"], type=row["type"], initial_balance=row["initial_balance"]) for row in self.list_accounts(user_id)]
+        active_account_ids = {account.id for account in accounts}
         transactions = []
         with self._connect() as conn:
             rows = conn.execute("SELECT * FROM transactions WHERE user_id = ? ORDER BY occurred_at", (user_id,)).fetchall()
         for row in rows:
+            if row["source_account_id"] and row["source_account_id"] not in active_account_ids:
+                continue
+            if row["destination_account_id"] and row["destination_account_id"] not in active_account_ids:
+                continue
             transactions.append(
                 Transaction(
                     id=row["id"],

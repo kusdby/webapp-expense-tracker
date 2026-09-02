@@ -25,12 +25,18 @@ async function loadSummary() {
 
 function renderAccounts() {
   accountList.innerHTML = state.accounts.map(account => `
-    <div class="row">
+    <div class="row account-row">
       <div>
         <strong>${escapeHtml(account.name)}</strong>
         <small>${escapeHtml(account.type)}</small>
       </div>
-      <strong>${rupiah.format(account.balance)}</strong>
+      <div class="account-actions">
+        <strong>${rupiah.format(account.balance)}</strong>
+        <div>
+          <button class="ghost small" onclick='editAccountBalance(${JSON.stringify(account.id)}, ${JSON.stringify(account.name)}, ${account.balance})'>Edit saldo</button>
+          <button class="ghost small danger" onclick='deleteAccount(${JSON.stringify(account.id)}, ${JSON.stringify(account.name)})'>Hapus</button>
+        </div>
+      </div>
     </div>
   `).join('') || '<p class="muted">Belum ada akun.</p>';
 }
@@ -125,6 +131,33 @@ async function saveAccount(event) {
   accountDialog.close();
   event.target.reset();
   await loadSummary();
+}
+
+async function editAccountBalance(accountId, accountName, currentBalance) {
+  const input = prompt(`Saldo baru untuk ${accountName}:`, String(currentBalance));
+  if (input === null) return;
+  const balance = parseRupiahInput(input);
+  if (!Number.isFinite(balance)) {
+    alert('Saldo harus berupa angka.');
+    return;
+  }
+  await api(`/api/accounts/${accountId}/balance`, {
+    method: 'PUT',
+    body: JSON.stringify({ balance }),
+  });
+  await loadSummary();
+}
+
+async function deleteAccount(accountId, accountName) {
+  if (!confirm(`Hapus akun saldo ${accountName}? Transaksi lama tetap tersimpan, tapi akun ini disembunyikan dari dashboard.`)) return;
+  await api(`/api/accounts/${accountId}`, { method: 'DELETE' });
+  await loadSummary();
+}
+
+function parseRupiahInput(value) {
+  const cleaned = String(value).replace(/[^0-9-]/g, '');
+  if (!cleaned || cleaned === '-') return NaN;
+  return Number(cleaned);
 }
 
 function formatDate(value) {
