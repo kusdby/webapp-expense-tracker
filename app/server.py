@@ -185,6 +185,7 @@ class FinanceHandler(BaseHTTPRequestHandler):
         content = candidate.read_bytes()
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", _content_type(candidate))
+        self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
