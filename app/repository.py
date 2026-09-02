@@ -6,8 +6,9 @@ import hmac
 import secrets
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from app.finance import Account, Transaction, calculate_account_balances
 
@@ -140,6 +141,40 @@ class FinanceRepository:
             )
         return category_id
 
+    def update_category(
+        self,
+        user_id: str,
+        category_id: str,
+        *,
+        name: str,
+        category_type: str,
+        color: str = "#a78bfa",
+        icon: str = "tag",
+    ) -> bool:
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                UPDATE categories
+                SET name = ?, type = ?, color = ?, icon = ?
+                WHERE id = ? AND user_id = ? AND is_active = 1
+                """,
+                (name, category_type, color, icon, category_id, user_id),
+            )
+        return cur.rowcount == 1
+
+    def delete_category(self, user_id: str, category_id: str) -> bool:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE categories SET is_active = 0 WHERE id = ? AND user_id = ? AND is_active = 1",
+                (category_id, user_id),
+            )
+            if cur.rowcount == 1:
+                conn.execute(
+                    "UPDATE transactions SET category_id = NULL WHERE user_id = ? AND category_id = ?",
+                    (user_id, category_id),
+                )
+        return cur.rowcount == 1
+
     def create_transaction(
         self,
         user_id: str,
@@ -256,11 +291,16 @@ class FinanceRepository:
             row = conn.execute("SELECT reset_day FROM settings WHERE user_id = ?", (user_id,)).fetchone()
         return int(row["reset_day"]) if row else 25
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        finally:
+            conn.close()
 
 
 def _id() -> str:

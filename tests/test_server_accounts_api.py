@@ -46,6 +46,54 @@ class ServerAccountsApiTests(unittest.TestCase):
                 thread.join(timeout=2)
                 httpd.server_close()
 
+    def test_user_can_create_update_and_delete_category_via_api(self):
+        with tempfile.NamedTemporaryFile() as db:
+            FinanceHandler.repo = FinanceRepository(db.name)
+            FinanceHandler.repo.initialize()
+            user_id = FinanceHandler.repo.create_user("Maskus", "maskus", password="secret123")
+            account_id = FinanceHandler.repo.create_account(user_id, "BCA", "bank", 1_000_000)
+            category_id = FinanceHandler.repo.create_category(user_id, "Makan", "expense")
+            FinanceHandler.repo.create_transaction(user_id, "expense", 20_000, source_account_id=account_id, category_id=category_id)
+            FinanceHandler.user_id = user_id
+            FinanceHandler.sessions = {}
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), FinanceHandler)
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                base_url = f"http://127.0.0.1:{httpd.server_address[1]}"
+                cookie = self._login(base_url)
+
+                created = self._json_request(
+                    f"{base_url}/api/categories",
+                    method="POST",
+                    payload={"name": "Transport", "type": "expense", "color": "#f97316", "icon": "car"},
+                    cookie=cookie,
+                )
+                new_category_id = created["id"]
+                self._json_request(
+                    f"{base_url}/api/categories/{new_category_id}",
+                    method="PUT",
+                    payload={"name": "Bensin", "type": "expense", "color": "#f59e0b", "icon": "fuel"},
+                    cookie=cookie,
+                )
+                summary = self._json_request(f"{base_url}/api/summary", cookie=cookie)
+                category = next(item for item in summary["categories"] if item["id"] == new_category_id)
+                self.assertEqual(category["name"], "Bensin")
+                self.assertEqual(category["color"], "#f59e0b")
+                self.assertEqual(category["icon"], "fuel")
+
+                self._json_request(f"{base_url}/api/categories/{category_id}", method="DELETE", cookie=cookie)
+                summary = self._json_request(f"{base_url}/api/summary", cookie=cookie)
+                self.assertNotIn(category_id, [item["id"] for item in summary["categories"]])
+                transactions = self._json_request(f"{base_url}/api/transactions", cookie=cookie)
+                original = next(item for item in transactions if item["amount"] == 20_000)
+                self.assertIsNone(original["category_id"])
+                self.assertIsNone(original["category_name"])
+            finally:
+                httpd.shutdown()
+                thread.join(timeout=2)
+                httpd.server_close()
+
     def _login(self, base_url: str) -> str:
         req = urllib.request.Request(
             f"{base_url}/api/login",

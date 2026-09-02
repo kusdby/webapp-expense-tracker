@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kusdby Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=account-actions-20260902" />
+  <link rel="stylesheet" href="/styles.css?v=category-actions-20260902" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -64,7 +64,8 @@
 
         <article class="panel">
           <div class="panel-title">
-            <h2>Pengeluaran per Kategori</h2>
+            <h2>Kategori</h2>
+            <button class="ghost" onclick="openCategoryForm()">Tambah</button>
           </div>
           <div id="categoryChart" class="list"></div>
         </article>
@@ -142,6 +143,32 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=account-actions-20260902"></script>
+  <dialog id="categoryDialog">
+    <form method="dialog" class="modal" onsubmit="saveCategory(event)">
+      <h2 id="categoryDialogTitle">Tambah Kategori</h2>
+      <input id="categoryId" type="hidden" />
+      <label>Nama kategori
+        <input id="categoryName" placeholder="Makan / Transport / Gaji" required />
+      </label>
+      <label>Tipe
+        <select id="categoryType">
+          <option value="expense">Pengeluaran</option>
+          <option value="income">Pemasukan</option>
+        </select>
+      </label>
+      <label>Warna
+        <input id="categoryColor" type="color" value="#a78bfa" />
+      </label>
+      <label>Icon / emoji
+        <input id="categoryIcon" placeholder="tag / 🍜 / 🚗" value="tag" />
+      </label>
+      <div class="actions">
+        <button type="button" class="ghost" onclick="categoryDialog.close()">Batal</button>
+        <button class="primary" type="submit">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js?v=category-actions-20260902"></script>
 </body>
 </html>

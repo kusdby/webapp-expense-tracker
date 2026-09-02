@@ -132,6 +132,22 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 return
             self._json({"ok": True})
             return
+        category_id = _category_id_from_path(parsed.path)
+        if category_id:
+            data = self._read_json()
+            updated = self.repo.update_category(
+                self._require_user_id(),
+                category_id,
+                name=data["name"].strip(),
+                category_type=data.get("type", "expense"),
+                color=data.get("color", "#a78bfa"),
+                icon=data.get("icon", "tag"),
+            )
+            if not updated:
+                self._json({"error": "Category not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
         self.send_error(HTTPStatus.NOT_FOUND)
 
     def _do_DELETE(self) -> None:
@@ -141,6 +157,14 @@ class FinanceHandler(BaseHTTPRequestHandler):
             deleted = self.repo.delete_account(self._require_user_id(), account_id)
             if not deleted:
                 self._json({"error": "Account not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
+        category_id = _category_id_from_path(parsed.path)
+        if category_id:
+            deleted = self.repo.delete_category(self._require_user_id(), category_id)
+            if not deleted:
+                self._json({"error": "Category not found"}, HTTPStatus.NOT_FOUND)
                 return
             self._json({"ok": True})
             return
@@ -214,6 +238,13 @@ def _account_id_from_path(path: str, suffix: str = "") -> str | None:
     if suffix:
         account_id = account_id[:-len(suffix)]
     return account_id or None
+
+
+def _category_id_from_path(path: str) -> str | None:
+    prefix = "/api/categories/"
+    if not path.startswith(prefix):
+        return None
+    return path[len(prefix):] or None
 
 
 def _rupiah_to_int(value) -> int:
