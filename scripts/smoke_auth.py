@@ -13,7 +13,7 @@ DB = ROOT / "data" / "dev-smoke-auth.db"
 DB.unlink(missing_ok=True)
 
 env = os.environ.copy()
-env.update({"PORT": "8098", "ADMIN_USERNAME": "kusdby", "ADMIN_NAME": "Kusdby", "ADMIN_PASSWORD": "maskus123", "FINANCE_DB": str(DB)})
+env.update({"PORT": "8098", "ADMIN_USERNAME": "test-admin", "ADMIN_NAME": "Test Admin", "ADMIN_PASSWORD": "test-password-123", "FINANCE_DB": str(DB)})
 proc = subprocess.Popen([sys.executable, "-m", "app.server"], cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 try:
     for _ in range(30):
@@ -35,7 +35,7 @@ try:
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
     req = urllib.request.Request(
         "http://127.0.0.1:8098/api/login",
-        data=json.dumps({"username": "kusdby", "password": "maskus123"}).encode(),
+        data=json.dumps({"username": "test-admin", "password": "test-password-123"}).encode(),
         headers={"Content-Type": "application/json"},
         method="POST",
     )

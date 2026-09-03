@@ -10,7 +10,7 @@ class FinanceRepositoryTests(unittest.TestCase):
             repo = FinanceRepository(db.name)
             repo.initialize()
 
-            user_id = repo.create_user("Maskus", "maskus")
+            user_id = repo.create_user("Test User", "test-user")
             bri_id = repo.create_account(user_id, "BRI", "bank", 1_000_000)
             jenius_id = repo.create_account(user_id, "Jenius", "bank", 500_000)
             food_id = repo.create_category(user_id, "Makan", "expense")
@@ -51,7 +51,7 @@ class FinanceRepositoryTests(unittest.TestCase):
             repo = FinanceRepository(db.name)
             repo.initialize()
 
-            user_id = repo.create_user("Maskus", "maskus")
+            user_id = repo.create_user("Test User", "test-user")
             account_id = repo.create_account(user_id, "BCA", "bank", 1_000_000)
             food_id = repo.create_category(user_id, "Makan", "expense")
             repo.create_transaction(user_id, "expense", 250_000, source_account_id=account_id, category_id=food_id)

@@ -10,7 +10,7 @@ class DashboardSummaryTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as db:
             repo = FinanceRepository(db.name)
             repo.initialize()
-            user_id = repo.create_user("Maskus", "maskus")
+            user_id = repo.create_user("Test User", "test-user")
             bri = repo.create_account(user_id, "BRI", "bank", 1_000_000)
             jenius = repo.create_account(user_id, "Jenius", "bank", 500_000)
             food = repo.create_category(user_id, "Makan", "expense")

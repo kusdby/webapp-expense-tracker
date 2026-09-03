@@ -20,8 +20,8 @@ Sudah ada:
 
 ```bash
 python3 -m unittest discover -s tests -v
-export ADMIN_USERNAME=kusdby
-export ADMIN_PASSWORD=$ADMIN_PASSWORD
+export ADMIN_USERNAME='your-admin-username'
+export ADMIN_PASSWORD='your-admin-password'
 PORT=8097 python3 -m app.server
 ```
 
@@ -34,7 +34,7 @@ http://127.0.0.1:8097
 Login awal:
 
 ```text
-username: sesuai ADMIN_USERNAME, contoh kusdby
+username: sesuai ADMIN_USERNAME yang dikonfigurasi di environment
 password: sesuai ADMIN_PASSWORD saat run
 ```
 
@@ -60,8 +60,8 @@ docker build -t webapp-expense-tracker:latest .
 docker run -d \
   --name webapp-expense-tracker \
   -p 8097:8097 \
-  -e ADMIN_USERNAME=kusdby \
-  -e ADMIN_PASSWORD=$ADMIN_PASSWORD \
+  -e ADMIN_USERNAME='your-admin-username' \
+  -e ADMIN_PASSWORD='your-admin-password' \
   -v "$PWD/data:/app/data" \
   --restart unless-stopped \
   webapp-expense-tracker:latest

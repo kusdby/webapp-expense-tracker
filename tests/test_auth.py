@@ -10,10 +10,10 @@ class AuthRepositoryTests(unittest.TestCase):
             repo = FinanceRepository(db.name)
             repo.initialize()
 
-            user_id = repo.create_user("Maskus", "maskus", password="secret123")
+            user_id = repo.create_user("Test User", "test-user", password="secret123")
 
-            self.assertEqual(repo.verify_login("maskus", "secret123"), user_id)
-            self.assertIsNone(repo.verify_login("maskus", "wrong"))
+            self.assertEqual(repo.verify_login("test-user", "secret123"), user_id)
+            self.assertIsNone(repo.verify_login("test-user", "wrong"))
             stored = repo.get_user(user_id)
             self.assertNotEqual(stored["password_hash"], "secret123")
             self.assertIn("pbkdf2_sha256$", stored["password_hash"])

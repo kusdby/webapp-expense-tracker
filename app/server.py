@@ -15,7 +15,7 @@ from app.repository import FinanceRepository
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "web"
 DB_PATH = os.environ.get("FINANCE_DB", str(ROOT / "data" / "finance.db"))
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "maskus")
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")
 ADMIN_NAME = os.environ.get("ADMIN_NAME", ADMIN_USERNAME)
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
@@ -244,6 +244,8 @@ class FinanceHandler(BaseHTTPRequestHandler):
 
 
 def run(host: str = "0.0.0.0", port: int = 8089) -> None:
+    if not ADMIN_USERNAME:
+        raise RuntimeError("ADMIN_USERNAME environment variable is required")
     if not ADMIN_PASSWORD:
         raise RuntimeError("ADMIN_PASSWORD environment variable is required")
     FinanceHandler.repo.initialize()

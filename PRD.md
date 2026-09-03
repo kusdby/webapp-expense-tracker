@@ -45,7 +45,7 @@ Tujuan utama: membantu user tahu uangnya ada di mana, keluar untuk apa saja, dan
 - Mobile browser sebagai prioritas input harian.
 - Desktop browser sebagai prioritas dashboard dan review.
 - Self-hosted di server pribadi user.
-- Data disimpan di storage server `kusdby storage`.
+- Data disimpan di storage server `server storage`.
 - Akses idealnya bisa lewat domain pribadi jika nanti sudah deploy.
 
 ---
@@ -387,7 +387,7 @@ Dashboard harus memiliki komponen:
 - Frontend: responsive web app.
 - Backend: REST API untuk auth, accounts, categories, transactions, dashboard.
 - Database: SQLite untuk MVP personal-use.
-- Storage: folder app di RAID1 `kusdby storage`.
+- Storage: folder app di RAID1 `server storage`.
 - Deployment: Docker Compose agar mudah jalan di ZimaBoard/server pribadi.
 
 ### 14.2 Suggested Tech Stack
@@ -453,10 +453,10 @@ Rekomendasi awal: **Next.js + SQLite/Prisma + Docker Compose**, karena cukup rin
 ---
 
 ## 17. Open Questions
-- Nama final aplikasi apa? Contoh: `DuitTrack`, `SaldoKu`, `Kusdby Finance`, `MoneyBoard`.
+- Nama final aplikasi apa? Contoh: `DuitTrack`, `SaldoKu`, `Private Finance`, `MoneyBoard`.
 - Perlu multi-user atau cukup satu user admin?
 - Perlu target budget bulanan per kategori dari awal?
-- Perlu domain khusus, misalnya `finance.kusdby.com`?
+- Perlu domain khusus, misalnya `finance.example.com`?
 - Perlu dark mode dari MVP?
 - Data awal mau diinput manual atau import dari spreadsheet lama?
 - Apakah perlu attachment/foto struk di versi pertama?
@@ -494,6 +494,6 @@ Rekomendasi awal: **Next.js + SQLite/Prisma + Docker Compose**, karena cukup rin
 ---
 
 ## 19. Proposed Repository & Folder
-- Local folder: `/media/kusdby storage/Apps/webapp-expense-tracker`
+- Local folder: `/media/server storage/Apps/webapp-expense-tracker`
 - GitHub repo suggestion: `webapp-expense-tracker`
 - App type: self-hosted personal finance web app

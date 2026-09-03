@@ -15,7 +15,7 @@ class ServerAccountsApiTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as db:
             FinanceHandler.repo = FinanceRepository(db.name)
             FinanceHandler.repo.initialize()
-            user_id = FinanceHandler.repo.create_user("Maskus", "maskus", password="secret123")
+            user_id = FinanceHandler.repo.create_user("Test User", "test-user", password="secret123")
             account_id = FinanceHandler.repo.create_account(user_id, "BCA", "bank", 1_000_000)
             category_id = FinanceHandler.repo.create_category(user_id, "Makan", "expense")
             FinanceHandler.repo.create_transaction(user_id, "expense", 250_000, source_account_id=account_id, category_id=category_id)
@@ -50,7 +50,7 @@ class ServerAccountsApiTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as db:
             FinanceHandler.repo = FinanceRepository(db.name)
             FinanceHandler.repo.initialize()
-            user_id = FinanceHandler.repo.create_user("Maskus", "maskus", password="secret123")
+            user_id = FinanceHandler.repo.create_user("Test User", "test-user", password="secret123")
             account_id = FinanceHandler.repo.create_account(user_id, "BCA", "bank", 1_000_000)
             category_id = FinanceHandler.repo.create_category(user_id, "Makan", "expense")
             FinanceHandler.repo.create_transaction(user_id, "expense", 20_000, source_account_id=account_id, category_id=category_id)
@@ -98,7 +98,7 @@ class ServerAccountsApiTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as db:
             FinanceHandler.repo = FinanceRepository(db.name)
             FinanceHandler.repo.initialize()
-            user_id = FinanceHandler.repo.create_user("Maskus", "maskus", password="secret123")
+            user_id = FinanceHandler.repo.create_user("Test User", "test-user", password="secret123")
             account_id = FinanceHandler.repo.create_account(user_id, "BCA", "bank", 1_000_000)
             category_id = FinanceHandler.repo.create_category(user_id, "Makan", "expense")
             tx_id = FinanceHandler.repo.create_transaction(user_id, "expense", 100_000, source_account_id=account_id, category_id=category_id, note="awal")
@@ -134,7 +134,7 @@ class ServerAccountsApiTests(unittest.TestCase):
     def _login(self, base_url: str) -> str:
         req = urllib.request.Request(
             f"{base_url}/api/login",
-            data=json.dumps({"username": "maskus", "password": "secret123"}).encode("utf-8"),
+            data=json.dumps({"username": "test-user", "password": "secret123"}).encode("utf-8"),
             headers={"Content-Type": "application/json"},
             method="POST",
         )
