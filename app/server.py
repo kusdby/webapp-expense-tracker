@@ -14,6 +14,8 @@ from app.repository import FinanceRepository
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "web"
 DB_PATH = os.environ.get("FINANCE_DB", str(ROOT / "data" / "finance.db"))
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "maskus")
+ADMIN_NAME = os.environ.get("ADMIN_NAME", ADMIN_USERNAME)
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
 
@@ -55,6 +57,18 @@ class FinanceHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:
         try:
             self._do_POST()
+        except PermissionError:
+            self._json({"error": "Login required"}, HTTPStatus.UNAUTHORIZED)
+
+    def do_PUT(self) -> None:
+        try:
+            self._do_PUT()
+        except PermissionError:
+            self._json({"error": "Login required"}, HTTPStatus.UNAUTHORIZED)
+
+    def do_DELETE(self) -> None:
+        try:
+            self._do_DELETE()
         except PermissionError:
             self._json({"error": "Login required"}, HTTPStatus.UNAUTHORIZED)
 
@@ -107,6 +121,55 @@ class FinanceHandler(BaseHTTPRequestHandler):
             return
         self.send_error(HTTPStatus.NOT_FOUND)
 
+    def _do_PUT(self) -> None:
+        parsed = urlparse(self.path)
+        account_id = _account_id_from_path(parsed.path, suffix="/balance")
+        if account_id:
+            data = self._read_json()
+            updated = self.repo.set_account_balance(self._require_user_id(), account_id, _rupiah_to_int(data.get("balance", 0)))
+            if not updated:
+                self._json({"error": "Account not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
+        category_id = _category_id_from_path(parsed.path)
+        if category_id:
+            data = self._read_json()
+            updated = self.repo.update_category(
+                self._require_user_id(),
+                category_id,
+                name=data["name"].strip(),
+                category_type=data.get("type", "expense"),
+                color=data.get("color", "#a78bfa"),
+                icon=data.get("icon", "tag"),
+            )
+            if not updated:
+                self._json({"error": "Category not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
+        self.send_error(HTTPStatus.NOT_FOUND)
+
+    def _do_DELETE(self) -> None:
+        parsed = urlparse(self.path)
+        account_id = _account_id_from_path(parsed.path)
+        if account_id:
+            deleted = self.repo.delete_account(self._require_user_id(), account_id)
+            if not deleted:
+                self._json({"error": "Account not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
+        category_id = _category_id_from_path(parsed.path)
+        if category_id:
+            deleted = self.repo.delete_category(self._require_user_id(), category_id)
+            if not deleted:
+                self._json({"error": "Category not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
+        self.send_error(HTTPStatus.NOT_FOUND)
+
     def _require_user_id(self) -> str:
         user_id = self._session_user_id()
         if not user_id:
@@ -146,6 +209,7 @@ class FinanceHandler(BaseHTTPRequestHandler):
         content = candidate.read_bytes()
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", _content_type(candidate))
+        self.send_header("Cache-Control", "no-store, max-age=0")
         self.send_header("Content-Length", str(len(content)))
         self.end_headers()
         self.wfile.write(content)
@@ -155,7 +219,7 @@ def run(host: str = "0.0.0.0", port: int = 8089) -> None:
     if not ADMIN_PASSWORD:
         raise RuntimeError("ADMIN_PASSWORD environment variable is required")
     FinanceHandler.repo.initialize()
-    FinanceHandler.user_id = FinanceHandler.repo.ensure_demo_user(ADMIN_PASSWORD)
+    FinanceHandler.user_id = FinanceHandler.repo.ensure_initial_user(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_NAME)
     server = ThreadingHTTPServer((host, port), FinanceHandler)
     print(f"Expense tracker running at http://{host}:{port}")
     server.serve_forever()
@@ -164,6 +228,23 @@ def run(host: str = "0.0.0.0", port: int = 8089) -> None:
 def _first(params: dict[str, list[str]], key: str) -> str | None:
     values = params.get(key) or []
     return values[0] if values and values[0] else None
+
+
+def _account_id_from_path(path: str, suffix: str = "") -> str | None:
+    prefix = "/api/accounts/"
+    if not path.startswith(prefix) or (suffix and not path.endswith(suffix)):
+        return None
+    account_id = path[len(prefix):]
+    if suffix:
+        account_id = account_id[:-len(suffix)]
+    return account_id or None
+
+
+def _category_id_from_path(path: str) -> str | None:
+    prefix = "/api/categories/"
+    if not path.startswith(prefix):
+        return None
+    return path[len(prefix):] or None
 
 
 def _rupiah_to_int(value) -> int:

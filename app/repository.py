@@ -6,8 +6,9 @@ import hmac
 import secrets
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from app.finance import Account, Transaction, calculate_account_balances
 
@@ -100,12 +101,12 @@ class FinanceRepository:
             return row["id"]
         return None
 
-    def ensure_demo_user(self, password: str) -> str:
+    def ensure_initial_user(self, username: str, password: str, name: str | None = None) -> str:
         with self._connect() as conn:
-            row = conn.execute("SELECT id FROM users WHERE username = 'maskus' LIMIT 1").fetchone()
+            row = conn.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,)).fetchone()
             if row:
                 return row["id"]
-        user_id = self.create_user("Maskus", "maskus", password=password)
+        user_id = self.create_user(name or username, username, password=password)
         bri = self.create_account(user_id, "BRI", "bank", 1_000_000, color="#3b82f6")
         jenius = self.create_account(user_id, "Jenius", "bank", 500_000, color="#06b6d4")
         gopay = self.create_account(user_id, "GoPay", "e-wallet", 100_000, color="#22c55e")
@@ -140,6 +141,40 @@ class FinanceRepository:
             )
         return category_id
 
+    def update_category(
+        self,
+        user_id: str,
+        category_id: str,
+        *,
+        name: str,
+        category_type: str,
+        color: str = "#a78bfa",
+        icon: str = "tag",
+    ) -> bool:
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                UPDATE categories
+                SET name = ?, type = ?, color = ?, icon = ?
+                WHERE id = ? AND user_id = ? AND is_active = 1
+                """,
+                (name, category_type, color, icon, category_id, user_id),
+            )
+        return cur.rowcount == 1
+
+    def delete_category(self, user_id: str, category_id: str) -> bool:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE categories SET is_active = 0 WHERE id = ? AND user_id = ? AND is_active = 1",
+                (category_id, user_id),
+            )
+            if cur.rowcount == 1:
+                conn.execute(
+                    "UPDATE transactions SET category_id = NULL WHERE user_id = ? AND category_id = ?",
+                    (user_id, category_id),
+                )
+        return cur.rowcount == 1
+
     def create_transaction(
         self,
         user_id: str,
@@ -169,6 +204,26 @@ class FinanceRepository:
         with self._connect() as conn:
             rows = conn.execute("SELECT * FROM accounts WHERE user_id = ? AND is_archived = 0 ORDER BY created_at", (user_id,)).fetchall()
         return [dict(row) for row in rows]
+
+    def set_account_balance(self, user_id: str, account_id: str, target_balance: int) -> bool:
+        balances = self.get_balances(user_id)
+        if account_id not in balances:
+            return False
+        adjustment = int(target_balance) - balances[account_id]
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE accounts SET initial_balance = initial_balance + ? WHERE id = ? AND user_id = ? AND is_archived = 0",
+                (adjustment, account_id, user_id),
+            )
+        return cur.rowcount == 1
+
+    def delete_account(self, user_id: str, account_id: str) -> bool:
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE accounts SET is_archived = 1 WHERE id = ? AND user_id = ? AND is_archived = 0",
+                (account_id, user_id),
+            )
+        return cur.rowcount == 1
 
     def list_categories(self, user_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:
@@ -208,10 +263,15 @@ class FinanceRepository:
 
     def get_balances(self, user_id: str) -> dict[str, int]:
         accounts = [Account(id=row["id"], name=row["name"], type=row["type"], initial_balance=row["initial_balance"]) for row in self.list_accounts(user_id)]
+        active_account_ids = {account.id for account in accounts}
         transactions = []
         with self._connect() as conn:
             rows = conn.execute("SELECT * FROM transactions WHERE user_id = ? ORDER BY occurred_at", (user_id,)).fetchall()
         for row in rows:
+            if row["source_account_id"] and row["source_account_id"] not in active_account_ids:
+                continue
+            if row["destination_account_id"] and row["destination_account_id"] not in active_account_ids:
+                continue
             transactions.append(
                 Transaction(
                     id=row["id"],
@@ -231,11 +291,16 @@ class FinanceRepository:
             row = conn.execute("SELECT reset_day FROM settings WHERE user_id = ?", (user_id,)).fetchone()
         return int(row["reset_day"]) if row else 25
 
-    def _connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def _connect(self) -> Iterator[sqlite3.Connection]:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        finally:
+            conn.close()
 
 
 def _id() -> str:
