@@ -1,4 +1,4 @@
-let state = { accounts: [], categories: [], recent_transactions: [] };
+let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [] };
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
 
 async function api(path, options = {}) {
@@ -67,16 +67,23 @@ function renderCategories() {
 }
 
 function renderTransactions(transactions) {
+  state.visible_transactions = transactions;
   transactionList.innerHTML = transactions.map(tx => {
     const account = tx.type === 'income' ? tx.destination_account_name : tx.source_account_name;
     return `
-      <div class="row">
+      <div class="row transaction-row">
         <div>
           <strong class="${tx.type}">${tx.type}</strong>
           <small>${formatDate(tx.occurred_at)} · ${escapeHtml(account || '-')} · ${escapeHtml(tx.category_name || 'Tanpa kategori')}</small>
           <small>${escapeHtml(tx.note || '')}</small>
         </div>
-        <strong>${rupiah.format(tx.amount)}</strong>
+        <div class="account-actions">
+          <strong>${rupiah.format(tx.amount)}</strong>
+          <div>
+            <button class="ghost small" onclick='editTransaction(${JSON.stringify(tx.id)})'>Edit</button>
+            <button class="ghost small danger" onclick='deleteTransaction(${JSON.stringify(tx.id)})'>Hapus</button>
+          </div>
+        </div>
       </div>
     `;
   }).join('') || '<p class="muted">Belum ada transaksi.</p>';
@@ -101,6 +108,31 @@ async function loadTransactions() {
 }
 
 function openTransactionForm() {
+  transactionDialogTitle.textContent = 'Tambah Transaksi';
+  txId.value = '';
+  txOccurredAt.value = '';
+  txType.value = 'expense';
+  txAmount.value = '';
+  txSource.value = '';
+  txDestination.value = '';
+  txCategory.value = '';
+  txNote.value = '';
+  syncTransactionFields();
+  transactionDialog.showModal();
+}
+
+function editTransaction(transactionId) {
+  const tx = state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
+  if (!tx) return;
+  transactionDialogTitle.textContent = 'Edit Transaksi';
+  txId.value = tx.id;
+  txOccurredAt.value = tx.occurred_at || '';
+  txType.value = tx.type;
+  txAmount.value = tx.amount;
+  txSource.value = tx.source_account_id || '';
+  txDestination.value = tx.destination_account_id || '';
+  txCategory.value = tx.category_id || '';
+  txNote.value = tx.note || '';
   syncTransactionFields();
   transactionDialog.showModal();
 }
@@ -140,19 +172,30 @@ function syncTransactionFields() {
 async function saveTransaction(event) {
   event.preventDefault();
   const type = txType.value;
-  await api('/api/transactions', {
-    method: 'POST',
-    body: JSON.stringify({
-      type,
-      amount: txAmount.value,
-      source_account_id: type !== 'income' ? txSource.value : '',
-      destination_account_id: type !== 'expense' ? txDestination.value : '',
-      category_id: txCategory.value,
-      note: txNote.value,
-    }),
+  const id = txId.value;
+  const payload = {
+    type,
+    amount: txAmount.value,
+    source_account_id: type !== 'income' ? txSource.value : '',
+    destination_account_id: type !== 'expense' ? txDestination.value : '',
+    category_id: txCategory.value,
+    note: txNote.value,
+  };
+  if (id && txOccurredAt.value) payload.occurred_at = txOccurredAt.value;
+  await api(id ? `/api/transactions/${id}` : '/api/transactions', {
+    method: id ? 'PUT' : 'POST',
+    body: JSON.stringify(payload),
   });
   transactionDialog.close();
   event.target.reset();
+  await loadSummary();
+}
+
+async function deleteTransaction(transactionId) {
+  const tx = state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
+  const label = tx ? `${tx.type} ${rupiah.format(tx.amount)}` : 'transaksi ini';
+  if (!confirm(`Hapus ${label}? Saldo akun akan dihitung ulang otomatis.`)) return;
+  await api(`/api/transactions/${transactionId}`, { method: 'DELETE' });
   await loadSummary();
 }
 

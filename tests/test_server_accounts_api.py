@@ -94,6 +94,43 @@ class ServerAccountsApiTests(unittest.TestCase):
                 thread.join(timeout=2)
                 httpd.server_close()
 
+    def test_user_can_update_and_delete_transaction_via_api_and_balance_changes(self):
+        with tempfile.NamedTemporaryFile() as db:
+            FinanceHandler.repo = FinanceRepository(db.name)
+            FinanceHandler.repo.initialize()
+            user_id = FinanceHandler.repo.create_user("Maskus", "maskus", password="secret123")
+            account_id = FinanceHandler.repo.create_account(user_id, "BCA", "bank", 1_000_000)
+            category_id = FinanceHandler.repo.create_category(user_id, "Makan", "expense")
+            tx_id = FinanceHandler.repo.create_transaction(user_id, "expense", 100_000, source_account_id=account_id, category_id=category_id, note="awal")
+            FinanceHandler.user_id = user_id
+            FinanceHandler.sessions = {}
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), FinanceHandler)
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                base_url = f"http://127.0.0.1:{httpd.server_address[1]}"
+                cookie = self._login(base_url)
+
+                self._json_request(
+                    f"{base_url}/api/transactions/{tx_id}",
+                    method="PUT",
+                    payload={"type": "expense", "amount": 250_000, "source_account_id": account_id, "category_id": category_id, "note": "diubah"},
+                    cookie=cookie,
+                )
+                summary = self._json_request(f"{base_url}/api/summary", cookie=cookie)
+                self.assertEqual(summary["accounts"][0]["balance"], 750_000)
+                transactions = self._json_request(f"{base_url}/api/transactions", cookie=cookie)
+                self.assertEqual(transactions[0]["note"], "diubah")
+
+                self._json_request(f"{base_url}/api/transactions/{tx_id}", method="DELETE", cookie=cookie)
+                summary = self._json_request(f"{base_url}/api/summary", cookie=cookie)
+                self.assertEqual(summary["accounts"][0]["balance"], 1_000_000)
+                self.assertEqual(self._json_request(f"{base_url}/api/transactions", cookie=cookie), [])
+            finally:
+                httpd.shutdown()
+                thread.join(timeout=2)
+                httpd.server_close()
+
     def _login(self, base_url: str) -> str:
         req = urllib.request.Request(
             f"{base_url}/api/login",

@@ -77,7 +77,7 @@ dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(8px); }
   .panel-title { flex-direction: column; align-items: stretch; }
   .filters, .filters input, .filters select, .filters button { width: 100%; }
   .row { align-items: flex-start; }
-  .account-row { flex-direction: column; }
+  .account-row, .transaction-row { flex-direction: column; }
   .account-actions { width: 100%; justify-items: stretch; text-align: left; }
   .account-actions > div { justify-content: stretch; }
   .account-actions button { flex: 1; }

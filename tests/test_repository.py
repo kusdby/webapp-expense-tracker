@@ -106,6 +106,45 @@ class FinanceRepositoryTests(unittest.TestCase):
             self.assertIsNone(transaction["category_id"])
             self.assertIsNone(transaction["category_name"])
 
+    def test_user_can_update_and_delete_transaction_and_balances_recalculate(self):
+        with tempfile.NamedTemporaryFile() as db:
+            repo = FinanceRepository(db.name)
+            repo.initialize()
+
+            user_a = repo.create_user("A", "a")
+            user_b = repo.create_user("B", "b")
+            account_a = repo.create_account(user_a, "A BCA", "bank", 1_000_000)
+            account_b = repo.create_account(user_b, "B BRI", "bank", 1_000_000)
+            category_a = repo.create_category(user_a, "Makan", "expense")
+            category_b = repo.create_category(user_b, "Makan", "expense")
+            tx_id = repo.create_transaction(user_a, "expense", 100_000, source_account_id=account_a, category_id=category_a, note="awal")
+            foreign_tx = repo.create_transaction(user_b, "expense", 50_000, source_account_id=account_b, category_id=category_b)
+
+            updated = repo.update_transaction(
+                user_a,
+                tx_id,
+                tx_type="expense",
+                amount=250_000,
+                source_account_id=account_a,
+                destination_account_id=None,
+                category_id=category_a,
+                note="updated",
+            )
+            not_updated = repo.update_transaction(user_a, foreign_tx, tx_type="expense", amount=1, source_account_id=account_a)
+
+            self.assertTrue(updated)
+            self.assertFalse(not_updated)
+            self.assertEqual(repo.get_balances(user_a)[account_a], 750_000)
+            self.assertEqual(repo.list_transactions(user_a)[0]["note"], "updated")
+
+            deleted = repo.delete_transaction(user_a, tx_id)
+            not_deleted = repo.delete_transaction(user_a, foreign_tx)
+
+            self.assertTrue(deleted)
+            self.assertFalse(not_deleted)
+            self.assertEqual(repo.get_balances(user_a)[account_a], 1_000_000)
+            self.assertEqual(repo.list_transactions(user_a), [])
+
 
 if __name__ == "__main__":
     unittest.main()
