@@ -105,17 +105,52 @@ class FinanceRepository:
         with self._connect() as conn:
             row = conn.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,)).fetchone()
             if row:
-                return row["id"]
+                user_id = row["id"]
+                self.ensure_transfer_income_category(user_id)
+                self.migrate_legacy_transfer_transactions(user_id)
+                return user_id
         user_id = self.create_user(name or username, username, password=password)
         bri = self.create_account(user_id, "BRI", "bank", 1_000_000, color="#3b82f6")
         jenius = self.create_account(user_id, "Jenius", "bank", 500_000, color="#06b6d4")
         gopay = self.create_account(user_id, "GoPay", "e-wallet", 100_000, color="#22c55e")
         food = self.create_category(user_id, "Makan & Minum", "expense", color="#fb7185")
         salary = self.create_category(user_id, "Gaji", "income", color="#34d399")
+        transfer = self.ensure_transfer_income_category(user_id)
         self.create_transaction(user_id, "income", 2_000_000, destination_account_id=jenius, category_id=salary, note="Gajian")
         self.create_transaction(user_id, "expense", 125_000, source_account_id=bri, category_id=food, note="Makan siang")
-        self.create_transaction(user_id, "transfer", 50_000, source_account_id=bri, destination_account_id=gopay, category_id=None, note="Top up GoPay")
+        self.create_transaction(user_id, "income", 50_000, destination_account_id=gopay, category_id=transfer, note="Top up GoPay")
         return user_id
+
+    def ensure_transfer_income_category(self, user_id: str) -> str:
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT id FROM categories WHERE user_id = ? AND name = 'Transfer' AND type = 'income' AND is_active = 1 LIMIT 1",
+                (user_id,),
+            ).fetchone()
+            if row:
+                return row["id"]
+            category_id = _id()
+            conn.execute(
+                """
+                INSERT INTO categories (id, user_id, name, type, color, icon, created_at)
+                VALUES (?, ?, 'Transfer', 'income', '#60a5fa', '', ?)
+                """,
+                (category_id, user_id, _now()),
+            )
+        return category_id
+
+    def migrate_legacy_transfer_transactions(self, user_id: str) -> int:
+        transfer_category_id = self.ensure_transfer_income_category(user_id)
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                UPDATE transactions
+                SET type = 'income', source_account_id = NULL, category_id = ?
+                WHERE user_id = ? AND type = 'transfer'
+                """,
+                (transfer_category_id, user_id),
+            )
+        return cur.rowcount
 
     def create_account(self, user_id: str, name: str, account_type: str, initial_balance: int, *, color: str = "#38bdf8", icon: str = "wallet") -> str:
         account_id = _id()
@@ -187,6 +222,7 @@ class FinanceRepository:
         note: str = "",
         occurred_at: dt.datetime | None = None,
     ) -> str:
+        _validate_transaction_type(tx_type)
         tx_id = _id()
         occurred_at = occurred_at or dt.datetime.now()
         with self._connect() as conn:
@@ -213,6 +249,7 @@ class FinanceRepository:
         note: str = "",
         occurred_at: dt.datetime | None = None,
     ) -> bool:
+        _validate_transaction_type(tx_type)
         occurred_at = occurred_at or dt.datetime.now()
         with self._connect() as conn:
             cur = conn.execute(
@@ -356,3 +393,8 @@ def _verify_password(password: str, password_hash: str) -> bool:
 
 def _now() -> str:
     return dt.datetime.now().isoformat()
+
+
+def _validate_transaction_type(tx_type: str) -> None:
+    if tx_type not in {"income", "expense"}:
+        raise ValueError("Transaction type must be income or expense")

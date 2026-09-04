@@ -1,4 +1,4 @@
-let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [] };
+let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [], activeCategoryTab: 'expense' };
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
 
 async function api(path, options = {}) {
@@ -11,7 +11,9 @@ async function api(path, options = {}) {
 }
 
 async function loadSummary() {
+  const activeCategoryTab = state.activeCategoryTab || 'expense';
   state = await api('/api/summary');
+  state.activeCategoryTab = activeCategoryTab;
   totalBalance.textContent = rupiah.format(state.total_balance);
   periodExpense.textContent = rupiah.format(state.period_expense);
   periodIncome.textContent = rupiah.format(state.period_income);
@@ -43,10 +45,21 @@ function renderAccounts() {
 }
 
 function renderCategories() {
-  const expenseCategories = state.categories.filter(category => category.type === 'expense');
-  const incomeCategories = state.categories.filter(category => category.type === 'income');
-  expenseCategoryList.innerHTML = renderCategoryList(expenseCategories, 'Belum ada kategori pengeluaran.');
-  incomeCategoryList.innerHTML = renderCategoryList(incomeCategories, 'Belum ada kategori pemasukan.');
+  const type = state.activeCategoryTab || 'expense';
+  const categories = state.categories.filter(category => category.type === type);
+  categoryTabList.innerHTML = renderCategoryList(
+    categories,
+    type === 'expense' ? 'Belum ada kategori expenses.' : 'Belum ada kategori incomes.'
+  );
+  expenseCategoryTab.classList.toggle('active', type === 'expense');
+  incomeCategoryTab.classList.toggle('active', type === 'income');
+  expenseCategoryTab.setAttribute('aria-selected', String(type === 'expense'));
+  incomeCategoryTab.setAttribute('aria-selected', String(type === 'income'));
+}
+
+function switchCategoryTab(type) {
+  state.activeCategoryTab = type;
+  renderCategories();
 }
 
 function renderCategoryList(categories, emptyText) {
@@ -55,7 +68,6 @@ function renderCategoryList(categories, emptyText) {
       <div style="width:100%">
         <div class="between">
           <strong>${escapeHtml(category.name)}</strong>
-          <span class="pill">${category.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span>
         </div>
       </div>
       <div class="account-actions">
@@ -130,7 +142,13 @@ function fillSelects() {
   categoryFilter.innerHTML = '<option value="">Semua kategori</option>' + categoryOptions;
   txSource.innerHTML = '<option value="">Pilih akun</option>' + accountOptions;
   txDestination.innerHTML = '<option value="">Pilih akun</option>' + accountOptions;
-  txCategory.innerHTML = '<option value="">Tanpa kategori</option>' + categoryOptions;
+  fillTransactionCategorySelect(txType.value || 'expense');
+}
+
+function fillTransactionCategorySelect(type, selectedValue = '') {
+  const filteredCategories = state.categories.filter(category => category.type === type);
+  txCategory.innerHTML = '<option value="">Tanpa kategori</option>' + filteredCategories.map(category => `<option value="${category.id}">${escapeHtml(category.name)}</option>`).join('');
+  txCategory.value = selectedValue;
 }
 
 async function loadTransactions() {
@@ -167,7 +185,7 @@ function editTransaction(transactionId) {
   txDestination.value = tx.destination_account_id || '';
   txCategory.value = tx.category_id || '';
   txNote.value = tx.note || '';
-  syncTransactionFields();
+  syncTransactionFields(tx.category_id || '');
   transactionDialog.showModal();
 }
 
@@ -179,7 +197,7 @@ function openCategoryForm() {
   categoryDialogTitle.textContent = 'Tambah Kategori';
   categoryId.value = '';
   categoryName.value = '';
-  categoryType.value = 'expense';
+  categoryType.value = state.activeCategoryTab || 'expense';
   categoryColor.value = '#a78bfa';
   categoryDialog.showModal();
 }
@@ -195,10 +213,11 @@ function editCategory(categoryIdValue) {
   categoryDialog.showModal();
 }
 
-function syncTransactionFields() {
+function syncTransactionFields(selectedCategory = txCategory.value) {
   const type = txType.value;
   txSource.closest('label').style.display = type === 'income' ? 'none' : 'grid';
   txDestination.closest('label').style.display = type === 'expense' ? 'none' : 'grid';
+  fillTransactionCategorySelect(type, selectedCategory);
 }
 
 async function saveTransaction(event) {
@@ -257,6 +276,7 @@ async function saveCategory(event) {
   });
   categoryDialog.close();
   event.target.reset();
+  state.activeCategoryTab = payload.type;
   await loadSummary();
 }
 

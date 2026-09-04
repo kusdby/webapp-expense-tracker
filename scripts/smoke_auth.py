@@ -42,7 +42,9 @@ try:
     opener.open(req, timeout=2).read()
     summary = json.loads(opener.open("http://127.0.0.1:8098/api/summary", timeout=2).read())
     assert summary["reset_day"] == 25
-    assert summary["total_balance"] == 3_475_000
+    assert summary["total_balance"] == 3_525_000
+    assert "transfer" not in {tx["type"] for tx in summary["recent_transactions"]}
+    assert any(category["name"] == "Transfer" and category["type"] == "income" for category in summary["categories"])
     assert len(summary["accounts"]) == 3
     print("smoke ok", summary["total_balance"], summary["reset_day"], len(summary["accounts"]))
 finally:

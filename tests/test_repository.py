@@ -27,6 +27,66 @@ class FinanceRepositoryTests(unittest.TestCase):
             self.assertEqual(len(filtered), 1)
             self.assertEqual(filtered[0]["note"], "makan")
 
+    def test_transfer_is_seeded_as_income_category_not_transaction_type(self):
+        with tempfile.NamedTemporaryFile() as db:
+            repo = FinanceRepository(db.name)
+            repo.initialize()
+            user_id = repo.ensure_initial_user("test-admin", "test-password", "Test Admin")
+
+            categories = repo.list_categories(user_id)
+            category_pairs = {category["name"]: category["type"] for category in categories}
+            self.assertEqual(category_pairs["Transfer"], "income")
+            self.assertNotIn("transfer", [tx["type"] for tx in repo.list_transactions(user_id)])
+
+    def test_existing_user_gets_transfer_income_category_once(self):
+        with tempfile.NamedTemporaryFile() as db:
+            repo = FinanceRepository(db.name)
+            repo.initialize()
+            user_id = repo.create_user("Test User", "test-user")
+
+            first = repo.ensure_transfer_income_category(user_id)
+            second = repo.ensure_transfer_income_category(user_id)
+
+            self.assertEqual(first, second)
+            transfer_categories = [category for category in repo.list_categories(user_id) if category["name"] == "Transfer" and category["type"] == "income"]
+            self.assertEqual(len(transfer_categories), 1)
+
+    def test_repository_rejects_new_transfer_transaction_type(self):
+        with tempfile.NamedTemporaryFile() as db:
+            repo = FinanceRepository(db.name)
+            repo.initialize()
+            user_id = repo.create_user("Test User", "test-user")
+            source = repo.create_account(user_id, "Source", "bank", 100_000)
+            destination = repo.create_account(user_id, "Destination", "bank", 0)
+
+            with self.assertRaises(ValueError):
+                repo.create_transaction(user_id, "transfer", 10_000, source_account_id=source, destination_account_id=destination)
+
+    def test_legacy_transfer_transactions_migrate_to_income_transfer_category(self):
+        with tempfile.NamedTemporaryFile() as db:
+            repo = FinanceRepository(db.name)
+            repo.initialize()
+            user_id = repo.create_user("Test User", "test-user")
+            source = repo.create_account(user_id, "Source", "bank", 100_000)
+            destination = repo.create_account(user_id, "Destination", "bank", 0)
+            with repo._connect() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO transactions
+                    (id, user_id, type, amount, source_account_id, destination_account_id, category_id, note, occurred_at, created_at)
+                    VALUES ('legacy-transfer', ?, 'transfer', 10_000, ?, ?, NULL, 'legacy', '2026-09-04T00:00:00', '2026-09-04T00:00:00')
+                    """,
+                    (user_id, source, destination),
+                )
+
+            repo.migrate_legacy_transfer_transactions(user_id)
+
+            transaction = repo.list_transactions(user_id)[0]
+            self.assertEqual(transaction["type"], "income")
+            self.assertIsNone(transaction["source_account_id"])
+            self.assertEqual(transaction["destination_account_id"], destination)
+            self.assertEqual(transaction["category_name"], "Transfer")
+
     def test_users_cannot_see_each_others_accounts_or_transactions(self):
         with tempfile.NamedTemporaryFile() as db:
             repo = FinanceRepository(db.name)
