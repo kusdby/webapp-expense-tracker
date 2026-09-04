@@ -60,12 +60,16 @@ class FinanceHandler(BaseHTTPRequestHandler):
             self._do_POST()
         except PermissionError:
             self._json({"error": "Login required"}, HTTPStatus.UNAUTHORIZED)
+        except ValueError as exc:
+            self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
 
     def do_PUT(self) -> None:
         try:
             self._do_PUT()
         except PermissionError:
             self._json({"error": "Login required"}, HTTPStatus.UNAUTHORIZED)
+        except ValueError as exc:
+            self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
 
     def do_DELETE(self) -> None:
         try:

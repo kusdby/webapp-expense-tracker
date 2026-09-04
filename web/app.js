@@ -129,7 +129,13 @@ function fillSelects() {
   categoryFilter.innerHTML = '<option value="">Semua kategori</option>' + categoryOptions;
   txSource.innerHTML = '<option value="">Pilih akun</option>' + accountOptions;
   txDestination.innerHTML = '<option value="">Pilih akun</option>' + accountOptions;
-  txCategory.innerHTML = '<option value="">Tanpa kategori</option>' + categoryOptions;
+  fillTransactionCategorySelect(txType.value || 'expense');
+}
+
+function fillTransactionCategorySelect(type, selectedValue = '') {
+  const filteredCategories = state.categories.filter(category => category.type === type);
+  txCategory.innerHTML = '<option value="">Tanpa kategori</option>' + filteredCategories.map(category => `<option value="${category.id}">${escapeHtml(category.name)}</option>`).join('');
+  txCategory.value = selectedValue;
 }
 
 async function loadTransactions() {
@@ -166,7 +172,7 @@ function editTransaction(transactionId) {
   txDestination.value = tx.destination_account_id || '';
   txCategory.value = tx.category_id || '';
   txNote.value = tx.note || '';
-  syncTransactionFields();
+  syncTransactionFields(tx.category_id || '');
   transactionDialog.showModal();
 }
 
@@ -194,10 +200,11 @@ function editCategory(categoryIdValue) {
   categoryDialog.showModal();
 }
 
-function syncTransactionFields() {
+function syncTransactionFields(selectedCategory = txCategory.value) {
   const type = txType.value;
   txSource.closest('label').style.display = type === 'income' ? 'none' : 'grid';
   txDestination.closest('label').style.display = type === 'expense' ? 'none' : 'grid';
+  fillTransactionCategorySelect(type, selectedCategory);
 }
 
 async function saveTransaction(event) {
