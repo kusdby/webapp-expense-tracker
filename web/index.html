@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=income-expense-only-20260904" />
+  <link rel="stylesheet" href="/styles.css?v=category-tabs-20260904" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -82,15 +82,12 @@
             <h2>Kategori</h2>
             <button class="ghost" onclick="openCategoryForm()">Tambah</button>
           </div>
-          <div class="category-columns">
-            <div>
-              <h3>Pengeluaran</h3>
-              <div id="expenseCategoryList" class="list"></div>
-            </div>
-            <div>
-              <h3>Pemasukan</h3>
-              <div id="incomeCategoryList" class="list"></div>
-            </div>
+          <div id="categoryTabContent" class="category-tab-content">
+            <div id="categoryTabList" class="list"></div>
+          </div>
+          <div class="category-tabs" role="tablist" aria-label="Kategori">
+            <button id="expenseCategoryTab" class="category-tab active" type="button" onclick="switchCategoryTab('expense')">Expenses</button>
+            <button id="incomeCategoryTab" class="category-tab" type="button" onclick="switchCategoryTab('income')">Incomes</button>
           </div>
         </article>
       </section>
@@ -191,6 +188,6 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=income-expense-only-20260904"></script>
+  <script src="/app.js?v=category-tabs-20260904"></script>
 </body>
 </html>

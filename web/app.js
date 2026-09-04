@@ -1,4 +1,4 @@
-let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [] };
+let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [], activeCategoryTab: 'expense' };
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
 
 async function api(path, options = {}) {
@@ -11,7 +11,9 @@ async function api(path, options = {}) {
 }
 
 async function loadSummary() {
+  const activeCategoryTab = state.activeCategoryTab || 'expense';
   state = await api('/api/summary');
+  state.activeCategoryTab = activeCategoryTab;
   totalBalance.textContent = rupiah.format(state.total_balance);
   periodExpense.textContent = rupiah.format(state.period_expense);
   periodIncome.textContent = rupiah.format(state.period_income);
@@ -43,10 +45,21 @@ function renderAccounts() {
 }
 
 function renderCategories() {
-  const expenseCategories = state.categories.filter(category => category.type === 'expense');
-  const incomeCategories = state.categories.filter(category => category.type === 'income');
-  expenseCategoryList.innerHTML = renderCategoryList(expenseCategories, 'Belum ada kategori pengeluaran.');
-  incomeCategoryList.innerHTML = renderCategoryList(incomeCategories, 'Belum ada kategori pemasukan.');
+  const type = state.activeCategoryTab || 'expense';
+  const categories = state.categories.filter(category => category.type === type);
+  categoryTabList.innerHTML = renderCategoryList(
+    categories,
+    type === 'expense' ? 'Belum ada kategori expenses.' : 'Belum ada kategori incomes.'
+  );
+  expenseCategoryTab.classList.toggle('active', type === 'expense');
+  incomeCategoryTab.classList.toggle('active', type === 'income');
+  expenseCategoryTab.setAttribute('aria-selected', String(type === 'expense'));
+  incomeCategoryTab.setAttribute('aria-selected', String(type === 'income'));
+}
+
+function switchCategoryTab(type) {
+  state.activeCategoryTab = type;
+  renderCategories();
 }
 
 function renderCategoryList(categories, emptyText) {
@@ -184,7 +197,7 @@ function openCategoryForm() {
   categoryDialogTitle.textContent = 'Tambah Kategori';
   categoryId.value = '';
   categoryName.value = '';
-  categoryType.value = 'expense';
+  categoryType.value = state.activeCategoryTab || 'expense';
   categoryColor.value = '#a78bfa';
   categoryDialog.showModal();
 }
@@ -263,6 +276,7 @@ async function saveCategory(event) {
   });
   categoryDialog.close();
   event.target.reset();
+  state.activeCategoryTab = payload.type;
   await loadSummary();
 }
 
