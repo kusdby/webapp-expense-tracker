@@ -55,7 +55,6 @@ function renderCategoryList(categories, emptyText) {
       <div style="width:100%">
         <div class="between">
           <strong>${escapeHtml(category.name)}</strong>
-          <span class="pill">${category.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span>
         </div>
       </div>
       <div class="account-actions">
