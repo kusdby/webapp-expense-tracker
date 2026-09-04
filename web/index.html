@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kusdby Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=category-actions-20260902" />
+  <title>Expense Tracker</title>
+  <link rel="stylesheet" href="/styles.css?v=category-pies-20260904" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
     <form class="modal login-card" onsubmit="login(event)">
       <p class="eyebrow">Private finance app</p>
       <h1>Login dulu</h1>
-      <p class="muted">Masuk pakai user awal <code>kusdby</code>. Password diatur dari environment <code>ADMIN_PASSWORD</code> saat server dijalankan.</p>
+      <p class="muted">Masuk dengan akun yang sudah dikonfigurasi. Jangan bagikan username/password ke siapa pun.</p>
       <label>Username
-        <input id="loginUsername" value="kusdby" autocomplete="username" required />
+        <input id="loginUsername" autocomplete="username" required />
       </label>
       <label>Password
         <input id="loginPassword" type="password" autocomplete="current-password" required />
@@ -53,6 +53,21 @@
         </article>
       </section>
 
+      <section class="grid two-col chart-grid">
+        <article class="panel">
+          <div class="panel-title">
+            <h2>Dashboard Pengeluaran</h2>
+          </div>
+          <div id="expensePie" class="pie-panel"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-title">
+            <h2>Dashboard Pemasukan</h2>
+          </div>
+          <div id="incomePie" class="pie-panel"></div>
+        </article>
+      </section>
+
       <section class="grid two-col">
         <article class="panel">
           <div class="panel-title">
@@ -62,12 +77,21 @@
           <div id="accountList" class="list"></div>
         </article>
 
-        <article class="panel">
+        <article class="panel category-panel">
           <div class="panel-title">
             <h2>Kategori</h2>
             <button class="ghost" onclick="openCategoryForm()">Tambah</button>
           </div>
-          <div id="categoryChart" class="list"></div>
+          <div class="category-columns">
+            <div>
+              <h3>Pengeluaran</h3>
+              <div id="expenseCategoryList" class="list"></div>
+            </div>
+            <div>
+              <h3>Pemasukan</h3>
+              <div id="incomeCategoryList" class="list"></div>
+            </div>
+          </div>
         </article>
       </section>
 
@@ -88,7 +112,9 @@
 
   <dialog id="transactionDialog">
     <form method="dialog" class="modal" onsubmit="saveTransaction(event)">
-      <h2>Tambah Transaksi</h2>
+      <h2 id="transactionDialogTitle">Tambah Transaksi</h2>
+      <input id="txId" type="hidden" />
+      <input id="txOccurredAt" type="hidden" />
       <label>Tipe
         <select id="txType" required onchange="syncTransactionFields()">
           <option value="expense">Pengeluaran</option>
@@ -159,9 +185,6 @@
       <label>Warna
         <input id="categoryColor" type="color" value="#a78bfa" />
       </label>
-      <label>Icon / emoji
-        <input id="categoryIcon" placeholder="tag / 🍜 / 🚗" value="tag" />
-      </label>
       <div class="actions">
         <button type="button" class="ghost" onclick="categoryDialog.close()">Batal</button>
         <button class="primary" type="submit">Simpan</button>
@@ -169,6 +192,6 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=category-actions-20260902"></script>
+  <script src="/app.js?v=category-pies-20260904"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-let state = { accounts: [], categories: [], recent_transactions: [] };
+let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [] };
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
 
 async function api(path, options = {}) {
@@ -19,6 +19,7 @@ async function loadSummary() {
   periodText.textContent = `Periode berjalan ${formatDate(state.period_start)} – ${formatDate(state.period_end)} · reset tanggal ${state.reset_day}`;
   renderAccounts();
   renderCategories();
+  renderCategoryPies();
   fillSelects();
   renderTransactions(state.recent_transactions);
 }
@@ -42,41 +43,81 @@ function renderAccounts() {
 }
 
 function renderCategories() {
-  const totals = state.expense_by_category || {};
-  const max = Math.max(...Object.values(totals), 1);
-  categoryChart.innerHTML = state.categories.map(category => {
-    const value = category.type === 'expense' ? (totals[category.name] || 0) : 0;
-    return `
-      <div class="row account-row">
-        <div style="width:100%">
-          <div class="between">
-            <strong>${escapeHtml(category.icon || 'tag')} ${escapeHtml(category.name)}</strong>
-            <span class="pill">${category.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span>
-          </div>
-          ${category.type === 'expense' ? `<small>Total periode ini: ${rupiah.format(value)}</small><div class="bar"><div style="width:${Math.max(4, (value / max) * 100)}%; background:${escapeHtml(category.color || '#a78bfa')}"></div></div>` : '<small>Kategori pemasukan</small>'}
-        </div>
-        <div class="account-actions">
-          <div>
-            <button class="ghost small" onclick='editCategory(${JSON.stringify(category.id)})'>Edit</button>
-            <button class="ghost small danger" onclick='deleteCategory(${JSON.stringify(category.id)})'>Hapus</button>
-          </div>
+  const expenseCategories = state.categories.filter(category => category.type === 'expense');
+  const incomeCategories = state.categories.filter(category => category.type === 'income');
+  expenseCategoryList.innerHTML = renderCategoryList(expenseCategories, 'Belum ada kategori pengeluaran.');
+  incomeCategoryList.innerHTML = renderCategoryList(incomeCategories, 'Belum ada kategori pemasukan.');
+}
+
+function renderCategoryList(categories, emptyText) {
+  return categories.map(category => `
+    <div class="row account-row category-item">
+      <div style="width:100%">
+        <div class="between">
+          <strong>${escapeHtml(category.name)}</strong>
+          <span class="pill">${category.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</span>
         </div>
       </div>
-    `;
-  }).join('') || '<p class="muted">Belum ada kategori.</p>';
+      <div class="account-actions">
+        <div>
+          <button class="ghost small" onclick='editCategory(${JSON.stringify(category.id)})'>Edit</button>
+          <button class="ghost small danger" onclick='deleteCategory(${JSON.stringify(category.id)})'>Hapus</button>
+        </div>
+      </div>
+    </div>
+  `).join('') || `<p class="muted">${emptyText}</p>`;
+}
+
+function renderCategoryPies() {
+  renderPieChart(expensePie, state.expense_category_breakdown || [], 'Belum ada data pengeluaran periode ini.');
+  renderPieChart(incomePie, state.income_category_breakdown || [], 'Belum ada data pemasukan periode ini.');
+}
+
+function renderPieChart(container, breakdown, emptyText) {
+  if (!breakdown.length) {
+    container.innerHTML = `<p class="muted">${emptyText}</p>`;
+    return;
+  }
+  let current = 0;
+  const segments = breakdown.map(item => {
+    const start = current;
+    current += item.percentage;
+    return `${escapeHtml(item.color || '#64748b')} ${start}% ${current}%`;
+  }).join(', ');
+  container.innerHTML = `
+    <div class="pie-wrap">
+      <div class="pie" style="background: conic-gradient(${segments})"></div>
+      <div class="pie-legend">
+        ${breakdown.map(item => `
+          <div class="legend-row">
+            <span><i style="background:${escapeHtml(item.color || '#64748b')}"></i>${escapeHtml(item.name)}</span>
+            <strong>${item.percentage}%</strong>
+            <small>${rupiah.format(item.amount)}</small>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
 }
 
 function renderTransactions(transactions) {
+  state.visible_transactions = transactions;
   transactionList.innerHTML = transactions.map(tx => {
     const account = tx.type === 'income' ? tx.destination_account_name : tx.source_account_name;
     return `
-      <div class="row">
+      <div class="row transaction-row">
         <div>
           <strong class="${tx.type}">${tx.type}</strong>
           <small>${formatDate(tx.occurred_at)} · ${escapeHtml(account || '-')} · ${escapeHtml(tx.category_name || 'Tanpa kategori')}</small>
           <small>${escapeHtml(tx.note || '')}</small>
         </div>
-        <strong>${rupiah.format(tx.amount)}</strong>
+        <div class="account-actions">
+          <strong>${rupiah.format(tx.amount)}</strong>
+          <div>
+            <button class="ghost small" onclick='editTransaction(${JSON.stringify(tx.id)})'>Edit</button>
+            <button class="ghost small danger" onclick='deleteTransaction(${JSON.stringify(tx.id)})'>Hapus</button>
+          </div>
+        </div>
       </div>
     `;
   }).join('') || '<p class="muted">Belum ada transaksi.</p>';
@@ -101,6 +142,31 @@ async function loadTransactions() {
 }
 
 function openTransactionForm() {
+  transactionDialogTitle.textContent = 'Tambah Transaksi';
+  txId.value = '';
+  txOccurredAt.value = '';
+  txType.value = 'expense';
+  txAmount.value = '';
+  txSource.value = '';
+  txDestination.value = '';
+  txCategory.value = '';
+  txNote.value = '';
+  syncTransactionFields();
+  transactionDialog.showModal();
+}
+
+function editTransaction(transactionId) {
+  const tx = state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
+  if (!tx) return;
+  transactionDialogTitle.textContent = 'Edit Transaksi';
+  txId.value = tx.id;
+  txOccurredAt.value = tx.occurred_at || '';
+  txType.value = tx.type;
+  txAmount.value = tx.amount;
+  txSource.value = tx.source_account_id || '';
+  txDestination.value = tx.destination_account_id || '';
+  txCategory.value = tx.category_id || '';
+  txNote.value = tx.note || '';
   syncTransactionFields();
   transactionDialog.showModal();
 }
@@ -115,7 +181,6 @@ function openCategoryForm() {
   categoryName.value = '';
   categoryType.value = 'expense';
   categoryColor.value = '#a78bfa';
-  categoryIcon.value = 'tag';
   categoryDialog.showModal();
 }
 
@@ -127,7 +192,6 @@ function editCategory(categoryIdValue) {
   categoryName.value = category.name;
   categoryType.value = category.type;
   categoryColor.value = category.color || '#a78bfa';
-  categoryIcon.value = category.icon || 'tag';
   categoryDialog.showModal();
 }
 
@@ -140,19 +204,30 @@ function syncTransactionFields() {
 async function saveTransaction(event) {
   event.preventDefault();
   const type = txType.value;
-  await api('/api/transactions', {
-    method: 'POST',
-    body: JSON.stringify({
-      type,
-      amount: txAmount.value,
-      source_account_id: type !== 'income' ? txSource.value : '',
-      destination_account_id: type !== 'expense' ? txDestination.value : '',
-      category_id: txCategory.value,
-      note: txNote.value,
-    }),
+  const id = txId.value;
+  const payload = {
+    type,
+    amount: txAmount.value,
+    source_account_id: type !== 'income' ? txSource.value : '',
+    destination_account_id: type !== 'expense' ? txDestination.value : '',
+    category_id: txCategory.value,
+    note: txNote.value,
+  };
+  if (id && txOccurredAt.value) payload.occurred_at = txOccurredAt.value;
+  await api(id ? `/api/transactions/${id}` : '/api/transactions', {
+    method: id ? 'PUT' : 'POST',
+    body: JSON.stringify(payload),
   });
   transactionDialog.close();
   event.target.reset();
+  await loadSummary();
+}
+
+async function deleteTransaction(transactionId) {
+  const tx = state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
+  const label = tx ? `${tx.type} ${rupiah.format(tx.amount)}` : 'transaksi ini';
+  if (!confirm(`Hapus ${label}? Saldo akun akan dihitung ulang otomatis.`)) return;
+  await api(`/api/transactions/${transactionId}`, { method: 'DELETE' });
   await loadSummary();
 }
 
@@ -173,7 +248,7 @@ async function saveCategory(event) {
     name: categoryName.value,
     type: categoryType.value,
     color: categoryColor.value,
-    icon: categoryIcon.value,
+    icon: '',
   };
   const id = categoryId.value;
   await api(id ? `/api/categories/${id}` : '/api/categories', {

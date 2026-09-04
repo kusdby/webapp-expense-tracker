@@ -200,6 +200,36 @@ class FinanceRepository:
             )
         return tx_id
 
+    def update_transaction(
+        self,
+        user_id: str,
+        tx_id: str,
+        *,
+        tx_type: str,
+        amount: int,
+        source_account_id: str | None = None,
+        destination_account_id: str | None = None,
+        category_id: str | None = None,
+        note: str = "",
+        occurred_at: dt.datetime | None = None,
+    ) -> bool:
+        occurred_at = occurred_at or dt.datetime.now()
+        with self._connect() as conn:
+            cur = conn.execute(
+                """
+                UPDATE transactions
+                SET type = ?, amount = ?, source_account_id = ?, destination_account_id = ?, category_id = ?, note = ?, occurred_at = ?
+                WHERE id = ? AND user_id = ?
+                """,
+                (tx_type, amount, source_account_id, destination_account_id, category_id, note, occurred_at.isoformat(), tx_id, user_id),
+            )
+        return cur.rowcount == 1
+
+    def delete_transaction(self, user_id: str, tx_id: str) -> bool:
+        with self._connect() as conn:
+            cur = conn.execute("DELETE FROM transactions WHERE id = ? AND user_id = ?", (tx_id, user_id))
+        return cur.rowcount == 1
+
     def list_accounts(self, user_id: str) -> list[dict[str, Any]]:
         with self._connect() as conn:
             rows = conn.execute("SELECT * FROM accounts WHERE user_id = ? AND is_archived = 0 ORDER BY created_at", (user_id,)).fetchall()

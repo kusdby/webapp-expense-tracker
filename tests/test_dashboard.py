@@ -10,7 +10,7 @@ class DashboardSummaryTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as db:
             repo = FinanceRepository(db.name)
             repo.initialize()
-            user_id = repo.create_user("Maskus", "maskus")
+            user_id = repo.create_user("Test User", "test-user")
             bri = repo.create_account(user_id, "BRI", "bank", 1_000_000)
             jenius = repo.create_account(user_id, "Jenius", "bank", 500_000)
             food = repo.create_category(user_id, "Makan", "expense")
@@ -26,6 +26,8 @@ class DashboardSummaryTests(unittest.TestCase):
             self.assertEqual(len(summary["categories"]), 2)
             self.assertEqual(len(summary["recent_transactions"]), 2)
             self.assertEqual(summary["accounts_by_id"][jenius]["balance"], 2_500_000)
+            self.assertEqual(summary["expense_category_breakdown"], [{"name": "Makan", "amount": 125_000, "percentage": 100.0, "color": "#a78bfa"}])
+            self.assertEqual(summary["income_category_breakdown"], [{"name": "Gaji", "amount": 2_000_000, "percentage": 100.0, "color": "#a78bfa"}])
 
 
 if __name__ == "__main__":

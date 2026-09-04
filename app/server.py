@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime as dt
 import json
 import os
 import secrets
@@ -14,7 +15,7 @@ from app.repository import FinanceRepository
 ROOT = Path(__file__).resolve().parent.parent
 STATIC_DIR = ROOT / "web"
 DB_PATH = os.environ.get("FINANCE_DB", str(ROOT / "data" / "finance.db"))
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "maskus")
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")
 ADMIN_NAME = os.environ.get("ADMIN_NAME", ADMIN_USERNAME)
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
 
@@ -148,6 +149,25 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 return
             self._json({"ok": True})
             return
+        tx_id = _transaction_id_from_path(parsed.path)
+        if tx_id:
+            data = self._read_json()
+            updated = self.repo.update_transaction(
+                self._require_user_id(),
+                tx_id,
+                tx_type=data["type"],
+                amount=_rupiah_to_int(data["amount"]),
+                source_account_id=data.get("source_account_id") or None,
+                destination_account_id=data.get("destination_account_id") or None,
+                category_id=data.get("category_id") or None,
+                note=data.get("note", ""),
+                occurred_at=_parse_datetime(data.get("occurred_at")),
+            )
+            if not updated:
+                self._json({"error": "Transaction not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
         self.send_error(HTTPStatus.NOT_FOUND)
 
     def _do_DELETE(self) -> None:
@@ -165,6 +185,14 @@ class FinanceHandler(BaseHTTPRequestHandler):
             deleted = self.repo.delete_category(self._require_user_id(), category_id)
             if not deleted:
                 self._json({"error": "Category not found"}, HTTPStatus.NOT_FOUND)
+                return
+            self._json({"ok": True})
+            return
+        tx_id = _transaction_id_from_path(parsed.path)
+        if tx_id:
+            deleted = self.repo.delete_transaction(self._require_user_id(), tx_id)
+            if not deleted:
+                self._json({"error": "Transaction not found"}, HTTPStatus.NOT_FOUND)
                 return
             self._json({"ok": True})
             return
@@ -216,6 +244,8 @@ class FinanceHandler(BaseHTTPRequestHandler):
 
 
 def run(host: str = "0.0.0.0", port: int = 8089) -> None:
+    if not ADMIN_USERNAME:
+        raise RuntimeError("ADMIN_USERNAME environment variable is required")
     if not ADMIN_PASSWORD:
         raise RuntimeError("ADMIN_PASSWORD environment variable is required")
     FinanceHandler.repo.initialize()
@@ -247,10 +277,29 @@ def _category_id_from_path(path: str) -> str | None:
     return path[len(prefix):] or None
 
 
+def _transaction_id_from_path(path: str) -> str | None:
+    prefix = "/api/transactions/"
+    if not path.startswith(prefix):
+        return None
+    return path[len(prefix):] or None
+
+
 def _rupiah_to_int(value) -> int:
     if isinstance(value, int):
         return value
     return int(str(value).replace(".", "").replace(",", "").strip() or 0)
+
+
+def _parse_datetime(value) -> dt.datetime | None:
+    if not value:
+        return None
+    text = str(value).strip()
+    try:
+        if len(text) == 10:
+            return dt.datetime.fromisoformat(text + "T00:00:00")
+        return dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
 
 
 def _content_type(path: Path) -> str:
