@@ -1,4 +1,4 @@
-let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [], activeCategoryTab: 'expense' };
+let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [], activeCategoryTab: 'expense', selectedPeriodStart: null };
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
 
 async function api(path, options = {}) {
@@ -10,15 +10,19 @@ async function api(path, options = {}) {
   return res.json();
 }
 
-async function loadSummary() {
+async function loadSummary(periodStart = state.selectedPeriodStart) {
   const activeCategoryTab = state.activeCategoryTab || 'expense';
-  state = await api('/api/summary');
+  const params = new URLSearchParams();
+  if (periodStart) params.set('period_start', periodStart);
+  const query = params.toString();
+  state = await api(query ? `/api/summary?${query}` : '/api/summary');
   state.activeCategoryTab = activeCategoryTab;
+  state.selectedPeriodStart = state.period_start;
   totalBalance.textContent = rupiah.format(state.total_balance);
   periodExpense.textContent = rupiah.format(state.period_expense);
   periodIncome.textContent = rupiah.format(state.period_income);
   netCashflow.textContent = rupiah.format(state.net_cashflow);
-  periodText.textContent = `Periode berjalan ${formatDate(state.period_start)} – ${formatDate(state.period_end)} · reset tanggal ${state.reset_day}`;
+  periodText.textContent = formatPeriodRange(state.period_start, state.period_end);
   renderAccounts();
   renderCategories();
   renderCategoryPies();
@@ -32,6 +36,36 @@ function showDetailPage() {
   dashboardPage.classList.toggle('hidden', !isDetailOpen);
   transactionPanel.classList.toggle('hidden', !isDetailOpen);
   detailToggleButton.textContent = isDetailOpen ? 'Detail' : 'Dashboard';
+}
+
+async function shiftPeriod(offset) {
+  const currentStart = parseYmd(state.selectedPeriodStart || state.period_start);
+  const nextStart = addMonths(currentStart, offset);
+  await loadSummary(toYmd(nextStart));
+}
+
+function addMonths(dateValue, offset) {
+  return new Date(dateValue.getFullYear(), dateValue.getMonth() + offset, dateValue.getDate());
+}
+
+function parseYmd(value) {
+  const [year, month, day] = String(value).split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function toYmd(dateValue) {
+  const year = dateValue.getFullYear();
+  const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+  const day = String(dateValue.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatPeriodRange(start, end) {
+  return `${formatDateLong(start)} - ${formatDateLong(end)}`;
+}
+
+function formatDateLong(value) {
+  return parseYmd(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'long' });
 }
 
 function renderAccounts() {

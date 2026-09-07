@@ -7,10 +7,18 @@ from app.finance import calculate_salary_period
 from app.repository import FinanceRepository
 
 
-def build_dashboard_summary(repo: FinanceRepository, user_id: str, today: dt.date | None = None) -> dict[str, Any]:
+def build_dashboard_summary(
+    repo: FinanceRepository,
+    user_id: str,
+    today: dt.date | None = None,
+    period_start: dt.date | None = None,
+) -> dict[str, Any]:
     today = today or dt.date.today()
     reset_day = repo.get_reset_day(user_id)
-    period_start, period_end = calculate_salary_period(today, reset_day)
+    if period_start:
+        period_end = _next_month(period_start) - dt.timedelta(days=1)
+    else:
+        period_start, period_end = calculate_salary_period(today, reset_day)
     balances = repo.get_balances(user_id)
     accounts = repo.list_accounts(user_id)
     categories = repo.list_categories(user_id)
@@ -54,8 +62,14 @@ def build_dashboard_summary(repo: FinanceRepository, user_id: str, today: dt.dat
         "income_by_category": income_by_category,
         "expense_category_breakdown": expense_category_breakdown,
         "income_category_breakdown": income_category_breakdown,
-        "recent_transactions": transactions[:10],
+        "recent_transactions": period_transactions[:10],
     }
+
+
+def _next_month(date_value: dt.date) -> dt.date:
+    year = date_value.year + (1 if date_value.month == 12 else 0)
+    month = 1 if date_value.month == 12 else date_value.month + 1
+    return dt.date(year, month, date_value.day)
 
 
 def _category_breakdown(totals: dict[str, int], category_colors: dict[str, str]) -> list[dict[str, Any]]:

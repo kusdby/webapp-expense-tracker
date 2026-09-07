@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=detail-page-20260904" />
+  <link rel="stylesheet" href="/styles.css?v=period-nav-20260907" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -28,7 +28,11 @@
       <div>
         <p class="eyebrow">Personal Finance Dashboard</p>
         <h1>Expense Tracker</h1>
-        <p id="periodText" class="muted">Loading periode...</p>
+        <div id="periodNavigator" class="period-nav" aria-label="Navigasi periode">
+          <button class="period-arrow" type="button" onclick="shiftPeriod(-1)" aria-label="Periode sebelumnya">←</button>
+          <span id="periodText">Loading periode...</span>
+          <button class="period-arrow" type="button" onclick="shiftPeriod(1)" aria-label="Periode berikutnya">→</button>
+        </div>
       </div>
       <div class="hero-actions">
         <button id="detailToggleButton" class="secondary" onclick="showDetailPage()">Detail</button>
@@ -195,6 +199,6 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=detail-page-20260904"></script>
+  <script src="/app.js?v=period-nav-20260907"></script>
 </body>
 </html>

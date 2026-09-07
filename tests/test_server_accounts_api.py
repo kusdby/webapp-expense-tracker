@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import tempfile
 import threading
@@ -155,6 +156,36 @@ class ServerAccountsApiTests(unittest.TestCase):
                     )
                 self.assertEqual(ctx.exception.code, 400)
                 ctx.exception.close()
+            finally:
+                httpd.shutdown()
+                thread.join(timeout=2)
+                httpd.server_close()
+
+    def test_summary_api_can_load_selected_period_without_merging_history(self):
+        with tempfile.NamedTemporaryFile() as db:
+            FinanceHandler.repo = FinanceRepository(db.name)
+            FinanceHandler.repo.initialize()
+            user_id = FinanceHandler.repo.create_user("Test User", "test-user", password="secret123")
+            account_id = FinanceHandler.repo.create_account(user_id, "BCA", "bank", 1_000_000)
+            expense_id = FinanceHandler.repo.create_category(user_id, "Makan", "expense")
+            income_id = FinanceHandler.repo.create_category(user_id, "Gaji", "income")
+            FinanceHandler.repo.create_transaction(user_id, "expense", 100_000, source_account_id=account_id, category_id=expense_id, note="old", occurred_at=dt.datetime(2026, 8, 25, 9, 0))
+            FinanceHandler.repo.create_transaction(user_id, "income", 2_000_000, destination_account_id=account_id, category_id=income_id, note="new", occurred_at=dt.datetime(2026, 9, 25, 9, 0))
+            FinanceHandler.user_id = user_id
+            FinanceHandler.sessions = {}
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), FinanceHandler)
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                base_url = f"http://127.0.0.1:{httpd.server_address[1]}"
+                cookie = self._login(base_url)
+                summary = self._json_request(f"{base_url}/api/summary?period_start=2026-09-25", cookie=cookie)
+
+                self.assertEqual(summary["period_start"], "2026-09-25")
+                self.assertEqual(summary["period_end"], "2026-10-24")
+                self.assertEqual(summary["period_expense"], 0)
+                self.assertEqual(summary["period_income"], 2_000_000)
+                self.assertEqual([tx["note"] for tx in summary["recent_transactions"]], ["new"])
             finally:
                 httpd.shutdown()
                 thread.join(timeout=2)
