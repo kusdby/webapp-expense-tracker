@@ -26,6 +26,14 @@ async function loadSummary() {
   renderTransactions(state.recent_transactions);
 }
 
+function showDetailPage() {
+  const isDetailOpen = !detailPage.classList.contains('hidden');
+  detailPage.classList.toggle('hidden', isDetailOpen);
+  dashboardPage.classList.toggle('hidden', !isDetailOpen);
+  transactionPanel.classList.toggle('hidden', !isDetailOpen);
+  detailToggleButton.textContent = isDetailOpen ? 'Detail' : 'Dashboard';
+}
+
 function renderAccounts() {
   accountList.innerHTML = state.accounts.map(account => `
     <div class="row account-row">

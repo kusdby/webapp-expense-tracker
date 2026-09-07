@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=category-tabs-20260904" />
+  <link rel="stylesheet" href="/styles.css?v=detail-page-20260904" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -30,10 +30,14 @@
         <h1>Expense Tracker</h1>
         <p id="periodText" class="muted">Loading periode...</p>
       </div>
-      <button class="primary" onclick="openTransactionForm()">+ Transaksi</button>
+      <div class="hero-actions">
+        <button id="detailToggleButton" class="secondary" onclick="showDetailPage()">Detail</button>
+        <button class="primary" onclick="openTransactionForm()">+ Transaksi</button>
+      </div>
     </header>
 
     <main>
+      <div id="dashboardPage">
       <section class="cards">
         <article class="card highlight">
           <span>Total Saldo</span>
@@ -67,8 +71,10 @@
           <div id="incomePie" class="pie-panel"></div>
         </article>
       </section>
+      </div>
 
-      <section class="grid two-col">
+      <div id="detailPage" class="hidden">
+      <section class="grid two-col detail-grid">
         <article class="panel">
           <div class="panel-title">
             <h2>Akun Saldo</h2>
@@ -91,8 +97,9 @@
           </div>
         </article>
       </section>
+      </div>
 
-      <section class="panel">
+      <section id="transactionPanel" class="panel">
         <div class="panel-title wrap">
           <h2>Transaksi</h2>
           <div class="filters">
@@ -188,6 +195,6 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=category-tabs-20260904"></script>
+  <script src="/app.js?v=detail-page-20260904"></script>
 </body>
 </html>
