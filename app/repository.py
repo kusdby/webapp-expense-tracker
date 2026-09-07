@@ -321,7 +321,16 @@ class FinanceRepository:
             sql += " AND (t.source_account_id = ? OR t.destination_account_id = ?)"
             params.extend([account_id, account_id])
         if query:
-            sql += " AND LOWER(t.note || ' ' || COALESCE(c.name, '') || ' ' || t.amount) LIKE ?"
+            sql += """
+                AND LOWER(
+                    t.type || ' ' ||
+                    t.note || ' ' ||
+                    COALESCE(c.name, '') || ' ' ||
+                    COALESCE(sa.name, '') || ' ' ||
+                    COALESCE(da.name, '') || ' ' ||
+                    t.amount
+                ) LIKE ?
+            """
             params.append(f"%{query.lower()}%")
         sql += " ORDER BY t.occurred_at DESC, t.created_at DESC"
         with self._connect() as conn:

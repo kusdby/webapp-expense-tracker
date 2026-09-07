@@ -87,6 +87,23 @@ class FinanceRepositoryTests(unittest.TestCase):
             self.assertEqual(transaction["destination_account_id"], destination)
             self.assertEqual(transaction["category_name"], "Transfer")
 
+    def test_global_transaction_search_matches_accounts_category_and_note(self):
+        with tempfile.NamedTemporaryFile() as db:
+            repo = FinanceRepository(db.name)
+            repo.initialize()
+            user_id = repo.create_user("Test User", "test-user")
+            bca = repo.create_account(user_id, "BCA Payroll", "bank", 1_000_000)
+            gopay = repo.create_account(user_id, "GoPay Harian", "e-wallet", 0)
+            food = repo.create_category(user_id, "Makan & Minum", "expense")
+            salary = repo.create_category(user_id, "Gaji", "income")
+            repo.create_transaction(user_id, "expense", 50_000, source_account_id=gopay, category_id=food, note="kopi pagi")
+            repo.create_transaction(user_id, "income", 2_000_000, destination_account_id=bca, category_id=salary, note="payroll september")
+
+            self.assertEqual([tx["note"] for tx in repo.list_transactions(user_id, query="gopay")], ["kopi pagi"])
+            self.assertEqual([tx["note"] for tx in repo.list_transactions(user_id, query="payroll")], ["payroll september"])
+            self.assertEqual([tx["note"] for tx in repo.list_transactions(user_id, query="makan")], ["kopi pagi"])
+            self.assertEqual([tx["note"] for tx in repo.list_transactions(user_id, query="income")], ["payroll september"])
+
     def test_users_cannot_see_each_others_accounts_or_transactions(self):
         with tempfile.NamedTemporaryFile() as db:
             repo = FinanceRepository(db.name)

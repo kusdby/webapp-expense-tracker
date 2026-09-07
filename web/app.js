@@ -156,7 +156,11 @@ function renderPieChart(container, breakdown, emptyText) {
 
 function renderTransactions(transactions) {
   state.visible_transactions = transactions;
-  transactionList.innerHTML = transactions.map(tx => {
+  transactionList.innerHTML = renderTransactionRows(transactions);
+}
+
+function renderTransactionRows(transactions) {
+  return transactions.map(tx => {
     const account = tx.type === 'income' ? tx.destination_account_name : tx.source_account_name;
     return `
       <div class="row transaction-row">
@@ -199,6 +203,32 @@ async function loadTransactions() {
   if (accountFilter.value) params.set('account_id', accountFilter.value);
   if (categoryFilter.value) params.set('category_id', categoryFilter.value);
   renderTransactions(await api('/api/transactions?' + params.toString()));
+}
+
+function openGlobalSearch() {
+  globalSearchInput.value = '';
+  globalSearchResults.innerHTML = '<p class="muted">Cari transaksi dari semua periode.</p>';
+  globalSearchDialog.showModal();
+  setTimeout(() => globalSearchInput.focus(), 50);
+}
+
+async function runGlobalSearch(event) {
+  event.preventDefault();
+  const query = globalSearchInput.value.trim();
+  if (!query) {
+    globalSearchResults.innerHTML = '<p class="muted">Tulis keyword dulu bro.</p>';
+    return;
+  }
+  const params = new URLSearchParams({ query });
+  const results = await api(`/api/transactions?${params.toString()}`);
+  state.visible_transactions = results;
+  renderGlobalSearchResults(results);
+}
+
+function renderGlobalSearchResults(results) {
+  globalSearchResults.innerHTML = results.length
+    ? renderTransactionRows(results)
+    : '<p class="muted">Nggak ada transaksi yang cocok.</p>';
 }
 
 function openTransactionForm() {

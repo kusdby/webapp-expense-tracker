@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=period-nav-20260907" />
+  <link rel="stylesheet" href="/styles.css?v=global-search-20260907" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -35,6 +35,7 @@
         </div>
       </div>
       <div class="hero-actions">
+        <button id="globalSearchButton" class="secondary icon-button" type="button" onclick="openGlobalSearch()" aria-label="Cari transaksi global">🔍</button>
         <button id="detailToggleButton" class="secondary" onclick="showDetailPage()">Detail</button>
         <button class="primary" onclick="openTransactionForm()">+ Transaksi</button>
       </div>
@@ -199,6 +200,22 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=period-nav-20260907"></script>
+  <dialog id="globalSearchDialog">
+    <form method="dialog" class="modal search-modal" onsubmit="runGlobalSearch(event)">
+      <div class="panel-title">
+        <h2>Search Transaksi</h2>
+        <button type="button" class="ghost small" onclick="globalSearchDialog.close()">Tutup</button>
+      </div>
+      <label>Cari global
+        <input id="globalSearchInput" type="search" placeholder="akun, kategori, catatan, nominal..." autocomplete="off" />
+      </label>
+      <button class="primary" type="submit">Cari</button>
+      <div id="globalSearchResults" class="transactions search-results">
+        <p class="muted">Cari transaksi dari semua periode.</p>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js?v=global-search-20260907"></script>
 </body>
 </html>
