@@ -23,9 +23,14 @@ body {
 .login-card { width: min(460px, 100%); background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.025)); border: 1px solid var(--line); border-radius: 28px; box-shadow: var(--shadow); padding: 24px; }
 .error { color: var(--danger); min-height: 1.2em; }
 .hero { display: flex; justify-content: space-between; gap: 18px; align-items: center; margin-bottom: 22px; }
+.hero-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 h1 { margin: 0; font-size: clamp(32px, 6vw, 58px); letter-spacing: -0.05em; }
 h2 { margin: 0; font-size: 18px; }
 .eyebrow { color: var(--brand); text-transform: uppercase; letter-spacing: .18em; font-size: 12px; font-weight: 800; }
+.period-nav { display: inline-flex; align-items: center; gap: 10px; color: var(--muted); margin-top: 8px; }
+.period-nav span { color: var(--text); font-weight: 800; }
+.period-arrow { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 999px; background: rgba(148,163,184,.14); color: var(--text); border: 1px solid rgba(148,163,184,.28); font-weight: 900; }
+.period-arrow:hover { background: rgba(148,163,184,.24); }
 .muted { color: var(--muted); }
 .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
 .card, .panel { background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02)); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); }
@@ -45,6 +50,8 @@ h2 { margin: 0; font-size: 18px; }
 button, input, select { font: inherit; }
 button { border: 0; cursor: pointer; }
 .primary { background: linear-gradient(135deg, var(--brand), var(--brand-2)); color: #03101a; font-weight: 800; border-radius: 999px; padding: 12px 18px; white-space: nowrap; }
+.secondary { background: rgba(148,163,184,.18); color: var(--text); border: 1px solid rgba(148,163,184,.28); border-radius: 999px; padding: 12px 18px; white-space: nowrap; font-weight: 800; }
+.icon-button { width: 46px; padding-inline: 0; display: grid; place-items: center; }
 .ghost { background: rgba(255,255,255,.06); color: var(--text); border: 1px solid var(--line); border-radius: 999px; padding: 10px 14px; }
 .ghost.small { padding: 7px 10px; font-size: 12px; }
 .ghost.danger { color: var(--danger); border-color: rgba(251,113,133,.35); }
@@ -74,6 +81,9 @@ input, select { background: var(--panel-2); color: var(--text); border: 1px soli
 .legend-row i { width: 11px; height: 11px; border-radius: 50%; flex: 0 0 auto; }
 .legend-row small { grid-column: 1 / -1; color: var(--muted); }
 dialog { border: 0; border-radius: 24px; background: var(--panel); color: var(--text); width: min(520px, calc(100% - 28px)); box-shadow: var(--shadow); }
+dialog#globalSearchDialog { width: min(760px, calc(100% - 28px)); }
+.search-modal { max-height: min(80vh, 760px); }
+.search-results { max-height: 48vh; overflow: auto; padding-right: 4px; }
 dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(8px); }
 .modal { display: grid; gap: 13px; }
 .modal label { display: grid; gap: 7px; color: var(--muted); }
@@ -87,7 +97,8 @@ dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(8px); }
 }
 @media (max-width: 560px) {
   .hero { flex-direction: column; }
-  .hero .primary { width: 100%; }
+  .hero-actions { width: 100%; display: grid; grid-template-columns: auto 1fr 1fr; }
+  .hero .primary, .hero .secondary { width: 100%; }
   .cards { grid-template-columns: 1fr; }
   .panel-title { flex-direction: column; align-items: stretch; }
   .filters, .filters input, .filters select, .filters button { width: 100%; }

@@ -42,7 +42,12 @@ class FinanceHandler(BaseHTTPRequestHandler):
             self._json({"authenticated": True, "user": {"id": user["id"], "name": user["name"], "username": user["username"]}})
             return
         if parsed.path == "/api/summary":
-            self._json(build_dashboard_summary(self.repo, self._require_user_id()))
+            params = parse_qs(parsed.query)
+            self._json(build_dashboard_summary(
+                self.repo,
+                self._require_user_id(),
+                period_start=_parse_date(_first(params, "period_start")),
+            ))
             return
         if parsed.path == "/api/transactions":
             params = parse_qs(parsed.query)
@@ -292,6 +297,15 @@ def _rupiah_to_int(value) -> int:
     if isinstance(value, int):
         return value
     return int(str(value).replace(".", "").replace(",", "").strip() or 0)
+
+
+def _parse_date(value) -> dt.date | None:
+    if not value:
+        return None
+    try:
+        return dt.date.fromisoformat(str(value).strip())
+    except ValueError:
+        return None
 
 
 def _parse_datetime(value) -> dt.datetime | None:

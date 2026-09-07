@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=category-tabs-20260904" />
+  <link rel="stylesheet" href="/styles.css?v=global-search-20260907" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -28,12 +28,21 @@
       <div>
         <p class="eyebrow">Personal Finance Dashboard</p>
         <h1>Expense Tracker</h1>
-        <p id="periodText" class="muted">Loading periode...</p>
+        <div id="periodNavigator" class="period-nav" aria-label="Navigasi periode">
+          <button class="period-arrow" type="button" onclick="shiftPeriod(-1)" aria-label="Periode sebelumnya">←</button>
+          <span id="periodText">Loading periode...</span>
+          <button class="period-arrow" type="button" onclick="shiftPeriod(1)" aria-label="Periode berikutnya">→</button>
+        </div>
       </div>
-      <button class="primary" onclick="openTransactionForm()">+ Transaksi</button>
+      <div class="hero-actions">
+        <button id="globalSearchButton" class="secondary icon-button" type="button" onclick="openGlobalSearch()" aria-label="Cari transaksi global">🔍</button>
+        <button id="detailToggleButton" class="secondary" onclick="showDetailPage()">Detail</button>
+        <button class="primary" onclick="openTransactionForm()">+ Transaksi</button>
+      </div>
     </header>
 
     <main>
+      <div id="dashboardPage">
       <section class="cards">
         <article class="card highlight">
           <span>Total Saldo</span>
@@ -67,8 +76,10 @@
           <div id="incomePie" class="pie-panel"></div>
         </article>
       </section>
+      </div>
 
-      <section class="grid two-col">
+      <div id="detailPage" class="hidden">
+      <section class="grid two-col detail-grid">
         <article class="panel">
           <div class="panel-title">
             <h2>Akun Saldo</h2>
@@ -91,8 +102,9 @@
           </div>
         </article>
       </section>
+      </div>
 
-      <section class="panel">
+      <section id="transactionPanel" class="panel">
         <div class="panel-title wrap">
           <h2>Transaksi</h2>
           <div class="filters">
@@ -188,6 +200,22 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=category-tabs-20260904"></script>
+  <dialog id="globalSearchDialog">
+    <form method="dialog" class="modal search-modal" onsubmit="runGlobalSearch(event)">
+      <div class="panel-title">
+        <h2>Search Transaksi</h2>
+        <button type="button" class="ghost small" onclick="globalSearchDialog.close()">Tutup</button>
+      </div>
+      <label>Cari global
+        <input id="globalSearchInput" type="search" placeholder="akun, kategori, catatan, nominal..." autocomplete="off" />
+      </label>
+      <button class="primary" type="submit">Cari</button>
+      <div id="globalSearchResults" class="transactions search-results">
+        <p class="muted">Cari transaksi dari semua periode.</p>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/app.js?v=global-search-20260907"></script>
 </body>
 </html>
