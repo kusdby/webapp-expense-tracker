@@ -5,6 +5,20 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class StaticUiTests(unittest.TestCase):
+    def test_pastel_balance_hierarchy(self):
+        html = (ROOT / "web" / "index.html").read_text()
+        css = (ROOT / "web" / "styles.css").read_text()
+        self.assertIn('class="card balance-card"', html)
+        self.assertIn('class="card expense-card"', html)
+        self.assertIn('class="card income-card"', html)
+        self.assertIn('class="cashflow-summary"', html)
+        self.assertIn('--balance: #f8df72;', css)
+        self.assertIn('--expense-card: #f3d0c9;', css)
+        self.assertIn('--income-card: #ded6f5;', css)
+        self.assertIn('grid-template-areas: "balance balance" "expense income";', css)
+        self.assertNotIn('Account number', html)
+        self.assertNotIn('Expire date', html)
+
     def test_dashboard_has_period_navigation_controls(self):
         html = (ROOT / "web" / "index.html").read_text()
         js = (ROOT / "web" / "app.js").read_text()

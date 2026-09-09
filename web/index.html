@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=detail-sketch-v2" />
+  <link rel="stylesheet" href="/styles.css?v=pastel-finance-v1" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -43,24 +43,24 @@
 
     <main>
       <div id="dashboardPage">
-      <section class="cards">
-        <article class="card highlight">
-          <span>Total Saldo</span>
+      <section class="cards" aria-label="Ringkasan keuangan">
+        <article class="card balance-card">
+          <div class="balance-heading"><span>Total Saldo</span><span class="balance-badge">Semua akun <span aria-hidden="true">↗</span></span></div>
           <strong id="totalBalance">Rp0</strong>
+          <span class="card-caption">Saldo gabungan seluruh akunmu</span>
         </article>
-        <article class="card">
-          <span>Pengeluaran Periode</span>
+        <article class="card expense-card">
+          <span class="metric-label"><i aria-hidden="true">↗</i> Expenses</span>
           <strong id="periodExpense">Rp0</strong>
+          <span class="card-caption">Pengeluaran periode</span>
         </article>
-        <article class="card">
-          <span>Pemasukan Periode</span>
+        <article class="card income-card">
+          <span class="metric-label"><i aria-hidden="true">↙</i> Incomes</span>
           <strong id="periodIncome">Rp0</strong>
-        </article>
-        <article class="card">
-          <span>Net Cashflow</span>
-          <strong id="netCashflow">Rp0</strong>
+          <span class="card-caption">Pemasukan periode</span>
         </article>
       </section>
+      <div class="cashflow-summary"><span>Net Cashflow <span class="muted">· periode ini</span></span><strong id="netCashflow">Rp0</strong></div>
 
       <section class="grid two-col chart-grid">
         <article class="panel">
@@ -217,6 +217,6 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=detail-sketch-v2"></script>
+  <script src="/app.js?v=pastel-finance-v1"></script>
 </body>
 </html>
