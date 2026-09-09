@@ -32,6 +32,13 @@ class FinanceRepository:
                     created_at TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS user_migrations (
+                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    name TEXT NOT NULL,
+                    applied_at TEXT NOT NULL,
+                    PRIMARY KEY (user_id, name)
+                );
+
                 CREATE TABLE IF NOT EXISTS settings (
                     user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
                     reset_day INTEGER NOT NULL DEFAULT 25
@@ -106,7 +113,6 @@ class FinanceRepository:
             row = conn.execute("SELECT id FROM users WHERE username = ? LIMIT 1", (username,)).fetchone()
             if row:
                 user_id = row["id"]
-                self.ensure_transfer_income_category(user_id)
                 self.migrate_legacy_transfer_transactions(user_id)
                 return user_id
         user_id = self.create_user(name or username, username, password=password)
@@ -119,6 +125,7 @@ class FinanceRepository:
         self.create_transaction(user_id, "income", 2_000_000, destination_account_id=jenius, category_id=salary, note="Gajian")
         self.create_transaction(user_id, "expense", 125_000, source_account_id=bri, category_id=food, note="Makan siang")
         self.create_transaction(user_id, "income", 50_000, destination_account_id=gopay, category_id=transfer, note="Top up GoPay")
+        self.migrate_legacy_transfer_transactions(user_id)
         return user_id
 
     def ensure_transfer_income_category(self, user_id: str) -> str:
@@ -140,17 +147,57 @@ class FinanceRepository:
         return category_id
 
     def migrate_legacy_transfer_transactions(self, user_id: str) -> int:
-        transfer_category_id = self.ensure_transfer_income_category(user_id)
+        """Convert old transfer rows once, never restore defaults on startup.
+
+        An already-converted database may have intentionally deleted or renamed
+        Transfer. With no legacy rows, only record completion; absence of a
+        category is not evidence that defaults need seeding.
+        """
+        migration = "legacy_transfer_to_income_v1"
         with self._connect() as conn:
-            cur = conn.execute(
-                """
-                UPDATE transactions
-                SET type = 'income', source_account_id = NULL, category_id = ?
-                WHERE user_id = ? AND type = 'transfer'
-                """,
-                (transfer_category_id, user_id),
+            # Serialize the check, data changes and durable marker atomically.
+            conn.execute("BEGIN IMMEDIATE")
+            if conn.execute(
+                "SELECT 1 FROM user_migrations WHERE user_id = ? AND name = ?",
+                (user_id, migration),
+            ).fetchone():
+                return 0
+            legacy = conn.execute(
+                "SELECT 1 FROM transactions WHERE user_id = ? AND type = 'transfer' LIMIT 1",
+                (user_id,),
+            ).fetchone()
+            count = 0
+            if legacy:
+                category = conn.execute(
+                    "SELECT id FROM categories WHERE user_id = ? AND name = 'Transfer' AND type = 'income' AND is_active = 1 LIMIT 1",
+                    (user_id,),
+                ).fetchone()
+                transfer_category_id = category["id"] if category else None
+                # Never undo a deletion/rename in an existing income taxonomy.
+                has_income_categories = conn.execute(
+                    "SELECT 1 FROM categories WHERE user_id = ? AND type = 'income' LIMIT 1",
+                    (user_id,),
+                ).fetchone()
+                if transfer_category_id is None and not has_income_categories:
+                    transfer_category_id = _id()
+                    conn.execute(
+                        "INSERT INTO categories (id, user_id, name, type, color, icon, created_at) VALUES (?, ?, 'Transfer', 'income', '#60a5fa', '', ?)",
+                        (transfer_category_id, user_id, _now()),
+                    )
+                cur = conn.execute(
+                    """
+                    UPDATE transactions
+                    SET type = 'income', source_account_id = NULL, category_id = ?
+                    WHERE user_id = ? AND type = 'transfer'
+                    """,
+                    (transfer_category_id, user_id),
+                )
+                count = cur.rowcount
+            conn.execute(
+                "INSERT INTO user_migrations (user_id, name, applied_at) VALUES (?, ?, ?)",
+                (user_id, migration, _now()),
             )
-        return cur.rowcount
+        return count
 
     def create_account(self, user_id: str, name: str, account_type: str, initial_balance: int, *, color: str = "#38bdf8", icon: str = "wallet") -> str:
         account_id = _id()
