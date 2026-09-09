@@ -87,21 +87,8 @@ function renderAccounts() {
 }
 
 function renderCategories() {
-  const type = state.activeCategoryTab || 'expense';
-  const categories = state.categories.filter(category => category.type === type);
-  categoryTabList.innerHTML = renderCategoryList(
-    categories,
-    type === 'expense' ? 'Belum ada kategori expenses.' : 'Belum ada kategori incomes.'
-  );
-  expenseCategoryTab.classList.toggle('active', type === 'expense');
-  incomeCategoryTab.classList.toggle('active', type === 'income');
-  expenseCategoryTab.setAttribute('aria-selected', String(type === 'expense'));
-  incomeCategoryTab.setAttribute('aria-selected', String(type === 'income'));
-}
-
-function switchCategoryTab(type) {
-  state.activeCategoryTab = type;
-  renderCategories();
+  expenseCategoryList.innerHTML = renderCategoryList(state.categories.filter(c => c.type === 'expense'), 'Belum ada kategori pengeluaran.');
+  incomeCategoryList.innerHTML = renderCategoryList(state.categories.filter(c => c.type === 'income'), 'Belum ada kategori pemasukan.');
 }
 
 function renderCategoryList(categories, emptyText) {
