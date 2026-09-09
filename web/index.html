@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=global-search-20260907" />
+  <link rel="stylesheet" href="/styles.css?v=pastel-finance-v1" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -43,24 +43,24 @@
 
     <main>
       <div id="dashboardPage">
-      <section class="cards">
-        <article class="card highlight">
-          <span>Total Saldo</span>
+      <section class="cards" aria-label="Ringkasan keuangan">
+        <article class="card balance-card">
+          <div class="balance-heading"><span>Total Saldo</span><span class="balance-badge">Semua akun <span aria-hidden="true">↗</span></span></div>
           <strong id="totalBalance">Rp0</strong>
+          <span class="card-caption">Saldo gabungan seluruh akunmu</span>
         </article>
-        <article class="card">
-          <span>Pengeluaran Periode</span>
+        <article class="card expense-card">
+          <span class="metric-label"><i aria-hidden="true">↗</i> Expenses</span>
           <strong id="periodExpense">Rp0</strong>
+          <span class="card-caption">Pengeluaran periode</span>
         </article>
-        <article class="card">
-          <span>Pemasukan Periode</span>
+        <article class="card income-card">
+          <span class="metric-label"><i aria-hidden="true">↙</i> Incomes</span>
           <strong id="periodIncome">Rp0</strong>
-        </article>
-        <article class="card">
-          <span>Net Cashflow</span>
-          <strong id="netCashflow">Rp0</strong>
+          <span class="card-caption">Pemasukan periode</span>
         </article>
       </section>
+      <div class="cashflow-summary"><span>Net Cashflow <span class="muted">· periode ini</span></span><strong id="netCashflow">Rp0</strong></div>
 
       <section class="grid two-col chart-grid">
         <article class="panel">
@@ -79,13 +79,13 @@
       </div>
 
       <div id="detailPage" class="hidden">
-      <section class="grid two-col detail-grid">
+      <section class="grid detail-grid">
         <article class="panel">
           <div class="panel-title">
             <h2>Akun Saldo</h2>
             <button class="ghost" onclick="openAccountForm()">Tambah</button>
           </div>
-          <div id="accountList" class="list"></div>
+          <div id="accountList" class="account-carousel" tabindex="0" aria-label="Daftar akun saldo, geser untuk akun lainnya"></div>
         </article>
 
         <article class="panel category-panel">
@@ -93,13 +93,14 @@
             <h2>Kategori</h2>
             <button class="ghost" onclick="openCategoryForm()">Tambah</button>
           </div>
-          <div id="categoryTabContent" class="category-tab-content">
-            <div id="categoryTabList" class="list"></div>
-          </div>
-          <div class="category-tabs" role="tablist" aria-label="Kategori">
-            <button id="expenseCategoryTab" class="category-tab active" type="button" onclick="switchCategoryTab('expense')">Expenses</button>
-            <button id="incomeCategoryTab" class="category-tab" type="button" onclick="switchCategoryTab('income')">Incomes</button>
-          </div>
+          <section class="category-group">
+            <h3>Expenses</h3>
+            <div id="expenseCategoryList" class="category-grid"></div>
+          </section>
+          <section class="category-group">
+            <h3>Incomes</h3>
+            <div id="incomeCategoryList" class="category-grid"></div>
+          </section>
         </article>
       </section>
       </div>
@@ -216,6 +217,6 @@
     </form>
   </dialog>
 
-  <script src="/app.js?v=global-search-20260907"></script>
+  <script src="/app.js?v=pastel-finance-v1"></script>
 </body>
 </html>
