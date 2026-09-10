@@ -27,7 +27,9 @@ async function loadSummary(periodStart = state.selectedPeriodStart) {
   renderCategories();
   renderCategoryPies();
   fillSelects();
-  renderTransactions(state.recent_transactions);
+  periodPicker.value = state.period_start.slice(0, 7);
+  await refreshTransactions();
+  if (globalSearchDialog.open && globalSearchInput.value.trim()) await refreshGlobalSearch();
 }
 
 function showDetailPage() {
@@ -65,7 +67,7 @@ function formatPeriodRange(start, end) {
 }
 
 function formatDateLong(value) {
-  return parseYmd(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'long' });
+  return parseYmd(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function renderAccounts() {
@@ -78,8 +80,8 @@ function renderAccounts() {
       <div class="account-actions">
         <strong>${rupiah.format(account.balance)}</strong>
         <div>
-          <button class="ghost small" onclick='editAccountBalance(${JSON.stringify(account.id)}, ${JSON.stringify(account.name)}, ${account.balance})'>Edit saldo</button>
-          <button class="ghost small danger" onclick='deleteAccount(${JSON.stringify(account.id)}, ${JSON.stringify(account.name)})'>Hapus</button>
+          <button type="button" class="ghost small" onclick='editAccountBalance(${JSON.stringify(account.id)}, ${escapeHtml(JSON.stringify(account.name))}, ${account.balance})'>Edit saldo</button>
+          <button type="button" class="ghost small danger" onclick='deleteAccount(${JSON.stringify(account.id)}, ${escapeHtml(JSON.stringify(account.name))})'>Hapus</button>
         </div>
       </div>
     </div>
@@ -101,8 +103,8 @@ function renderCategoryList(categories, emptyText) {
       </div>
       <div class="account-actions">
         <div>
-          <button class="ghost small" onclick='editCategory(${JSON.stringify(category.id)})'>Edit</button>
-          <button class="ghost small danger" onclick='deleteCategory(${JSON.stringify(category.id)})'>Hapus</button>
+          <button type="button" class="ghost small" onclick='editCategory(${JSON.stringify(category.id)})'>Edit</button>
+          <button type="button" class="ghost small danger" onclick='deleteCategory(${JSON.stringify(category.id)})'>Hapus</button>
         </div>
       </div>
     </div>
@@ -127,10 +129,10 @@ function renderPieChart(container, breakdown, emptyText) {
   }).join(', ');
   container.innerHTML = `
     <div class="pie-wrap">
-      <div class="pie" style="background: conic-gradient(${segments})"></div>
-      <div class="pie-legend">
+      <div class="pie" aria-hidden="true" style="background: conic-gradient(${segments})"></div>
+      <div class="pie-legend" role="list">
         ${breakdown.map(item => `
-          <div class="legend-row">
+          <div class="legend-row" role="listitem">
             <span><i style="background:${escapeHtml(item.color || '#64748b')}"></i>${escapeHtml(item.name)}</span>
             <strong>${item.percentage}%</strong>
             <small>${rupiah.format(item.amount)}</small>
@@ -159,8 +161,8 @@ function renderTransactionRows(transactions) {
         <div class="account-actions">
           <strong>${rupiah.format(tx.amount)}</strong>
           <div>
-            <button class="ghost small" onclick='editTransaction(${JSON.stringify(tx.id)})'>Edit</button>
-            <button class="ghost small danger" onclick='deleteTransaction(${JSON.stringify(tx.id)})'>Hapus</button>
+            <button type="button" class="ghost small" onclick='editTransaction(${JSON.stringify(tx.id)})'>Edit</button>
+            <button type="button" class="ghost small danger" onclick='deleteTransaction(${JSON.stringify(tx.id)})'>Hapus</button>
           </div>
         </div>
       </div>
@@ -169,10 +171,13 @@ function renderTransactionRows(transactions) {
 }
 
 function fillSelects() {
+  const accountValue = accountFilter.value, categoryValue = categoryFilter.value;
   const accountOptions = state.accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
   const categoryOptions = state.categories.map(c => `<option value="${c.id}" data-type="${c.type}">${escapeHtml(c.name)} (${c.type})</option>`).join('');
   accountFilter.innerHTML = '<option value="">Semua akun</option>' + accountOptions;
   categoryFilter.innerHTML = '<option value="">Semua kategori</option>' + categoryOptions;
+  accountFilter.value = state.accounts.some(a => a.id === accountValue) ? accountValue : '';
+  categoryFilter.value = state.categories.some(c => c.id === categoryValue) ? categoryValue : '';
   txSource.innerHTML = '<option value="">Pilih akun</option>' + accountOptions;
   txDestination.innerHTML = '<option value="">Pilih akun</option>' + accountOptions;
   fillTransactionCategorySelect(txType.value || 'expense');
@@ -184,12 +189,17 @@ function fillTransactionCategorySelect(type, selectedValue = '') {
   txCategory.value = selectedValue;
 }
 
-async function loadTransactions() {
+async function loadTransactions() { return refreshTransactions(); }
+async function refreshTransactions() {
   const params = new URLSearchParams();
   if (searchInput.value) params.set('query', searchInput.value);
   if (accountFilter.value) params.set('account_id', accountFilter.value);
   if (categoryFilter.value) params.set('category_id', categoryFilter.value);
-  renderTransactions(await api('/api/transactions?' + params.toString()));
+  const transactions = await api('/api/transactions?' + params.toString());
+  renderTransactions(transactions.filter(tx => {
+    const day = tx.occurred_at.slice(0, 10);
+    return day >= state.period_start && day <= state.period_end;
+  }));
 }
 
 function openGlobalSearch() {
@@ -201,21 +211,25 @@ function openGlobalSearch() {
 
 async function runGlobalSearch(event) {
   event.preventDefault();
+  await refreshGlobalSearch();
+}
+
+async function refreshGlobalSearch() {
   const query = globalSearchInput.value.trim();
   if (!query) {
-    globalSearchResults.innerHTML = '<p class="muted">Tulis keyword dulu bro.</p>';
+    globalSearchResults.innerHTML = '<p class="muted">Masukkan kata pencarian.</p>';
     return;
   }
   const params = new URLSearchParams({ query });
   const results = await api(`/api/transactions?${params.toString()}`);
-  state.visible_transactions = results;
+  state.global_transactions = results;
   renderGlobalSearchResults(results);
 }
 
 function renderGlobalSearchResults(results) {
   globalSearchResults.innerHTML = results.length
     ? renderTransactionRows(results)
-    : '<p class="muted">Nggak ada transaksi yang cocok.</p>';
+    : '<p class="muted">Tidak ada transaksi yang cocok. Ubah kata pencarian.</p>';
 }
 
 function openTransactionForm() {
@@ -233,7 +247,7 @@ function openTransactionForm() {
 }
 
 function editTransaction(transactionId) {
-  const tx = state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
+  const tx = (state.global_transactions || []).find(item => item.id === transactionId) || state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
   if (!tx) return;
   transactionDialogTitle.textContent = 'Edit Transaksi';
   txId.value = tx.id;
@@ -274,6 +288,8 @@ function editCategory(categoryIdValue) {
 
 function syncTransactionFields(selectedCategory = txCategory.value) {
   const type = txType.value;
+  txSource.required = type !== 'income';
+  txDestination.required = type !== 'expense';
   txSource.closest('label').style.display = type === 'income' ? 'none' : 'grid';
   txDestination.closest('label').style.display = type === 'expense' ? 'none' : 'grid';
   fillTransactionCategorySelect(type, selectedCategory);
@@ -282,6 +298,7 @@ function syncTransactionFields(selectedCategory = txCategory.value) {
 async function saveTransaction(event) {
   event.preventDefault();
   const type = txType.value;
+  if (!Number.isSafeInteger(parseRupiahInput(txAmount.value)) || parseRupiahInput(txAmount.value) <= 0) throw new Error('Invalid amount');
   const id = txId.value;
   const payload = {
     type,
@@ -302,7 +319,7 @@ async function saveTransaction(event) {
 }
 
 async function deleteTransaction(transactionId) {
-  const tx = state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
+  const tx = (state.global_transactions || []).find(item => item.id === transactionId) || state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
   const label = tx ? `${tx.type} ${rupiah.format(tx.amount)}` : 'transaksi ini';
   if (!confirm(`Hapus ${label}? Saldo akun akan dihitung ulang otomatis.`)) return;
   await api(`/api/transactions/${transactionId}`, { method: 'DELETE' });
@@ -347,20 +364,26 @@ async function deleteCategory(categoryIdValue) {
   await loadSummary();
 }
 
-async function editAccountBalance(accountId, accountName, currentBalance) {
-  const input = prompt(`Saldo baru untuk ${accountName}:`, String(currentBalance));
-  if (input === null) return;
-  const balance = parseRupiahInput(input);
-  if (!Number.isFinite(balance)) {
-    alert('Saldo harus berupa angka.');
-    return;
-  }
-  await api(`/api/accounts/${accountId}/balance`, {
-    method: 'PUT',
-    body: JSON.stringify({ balance }),
-  });
+function editAccountBalance(accountId, accountName, currentBalance) {
+  balanceId.value = accountId;
+  balanceAccount.textContent = accountName;
+  balanceAmount.value = currentBalance;
+  balanceDialog.showModal();
+  balanceAmount.focus();
+}
+async function saveBalance(event) {
+  event.preventDefault();
+  const balance = parseRupiahInput(balanceAmount.value);
+  if (!Number.isSafeInteger(balance)) throw new Error('Invalid balance');
+  await api(`/api/accounts/${balanceId.value}/balance`, {method: 'PUT', body: JSON.stringify({balance})});
+  balanceDialog.close();
   await loadSummary();
 }
+async function selectPeriod(value) {
+  if (!value) return;
+  await loadSummary(`${value}-${String(state.reset_day || 25).padStart(2, '0')}`);
+}
+async function currentPeriod() { await loadSummary(null); }
 
 async function deleteAccount(accountId, accountName) {
   if (!confirm(`Hapus akun saldo ${accountName}? Transaksi lama tetap tersimpan, tapi akun ini disembunyikan dari dashboard.`)) return;
@@ -369,9 +392,10 @@ async function deleteAccount(accountId, accountName) {
 }
 
 function parseRupiahInput(value) {
-  const cleaned = String(value).replace(/[^0-9-]/g, '');
+  if (!/^-?(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(String(value).trim())) return NaN;
+  const cleaned = String(value).replace(/\./g, '').trim();
   if (!cleaned || cleaned === '-') return NaN;
-  return Number(cleaned);
+  return Number.isSafeInteger(Number(cleaned)) ? Number(cleaned) : NaN;
 }
 
 function formatDate(value) {
@@ -407,5 +431,39 @@ async function boot() {
     loginPanel.classList.remove('hidden');
   }
 }
-
+let actionPending = false;
+function safeAction(label, action) {
+  return async function (...args) {
+    args[0]?.preventDefault?.();
+    if (actionPending) return;
+    actionPending = true;
+    const scope = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+    let status = scope.querySelector('.action-status');
+    if (!status) {
+      status = document.createElement('p');
+      status.className = 'action-status';
+      status.setAttribute('role', 'status');
+      scope.prepend(status);
+    }
+    status.textContent = `${label}…`;
+    const controls = [...document.querySelectorAll('button, input, select')];
+    const disabled = controls.map(el => el.disabled);
+    controls.forEach(el => el.disabled = true);
+    document.body.setAttribute('aria-busy', 'true');
+    try {
+      await action(...args);
+      status.textContent = '';
+    } catch {
+      if (scope.tagName === 'DIALOG' && !scope.open) document.body.prepend(status);
+      status.textContent = 'Aksi belum selesai. Periksa koneksi dan isian. Coba lagi dengan tombol aksi. Jika koneksi terputus saat menyimpan, muat ulang untuk memeriksa data sebelum mengirim ulang.';
+    } finally {
+      controls.forEach((el, i) => el.disabled = disabled[i]);
+      document.body.setAttribute('aria-busy', 'false');
+      actionPending = false;
+    }
+  };
+}
+for (const name of ['saveTransaction', 'deleteTransaction', 'saveAccount', 'saveCategory', 'deleteCategory', 'deleteAccount', 'loadTransactions', 'runGlobalSearch', 'shiftPeriod', 'login', 'saveBalance', 'selectPeriod', 'currentPeriod']) {
+  window[name] = safeAction('Memproses', window[name]);
+}
 boot();
