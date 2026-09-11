@@ -24,6 +24,7 @@
   </section>
 
   <div id="appShell" class="app-shell hidden">
+    <p id="dashboardStatus" role="status" aria-live="polite"></p>
     <header class="hero">
       <div>
         <p class="eyebrow">Personal Finance Dashboard</p>
@@ -47,21 +48,21 @@
       <section class="cards" aria-label="Ringkasan keuangan">
         <article class="card balance-card">
           <div class="balance-heading"><span>Total Saldo</span><span class="balance-badge">Semua akun <span aria-hidden="true">↗</span></span></div>
-          <strong id="totalBalance">Rp0</strong>
+          <strong id="totalBalance">Belum dimuat</strong>
           <span class="card-caption">Saldo gabungan seluruh akunmu</span>
         </article>
         <article class="card expense-card">
           <span class="metric-label"><i aria-hidden="true">↗</i> Expenses</span>
-          <strong id="periodExpense">Rp0</strong>
+          <strong id="periodExpense">Belum dimuat</strong>
           <span class="card-caption">Pengeluaran periode</span>
         </article>
         <article class="card income-card">
           <span class="metric-label"><i aria-hidden="true">↙</i> Incomes</span>
-          <strong id="periodIncome">Rp0</strong>
+          <strong id="periodIncome">Belum dimuat</strong>
           <span class="card-caption">Pemasukan periode</span>
         </article>
       </section>
-      <div class="cashflow-summary"><span>Net Cashflow <span class="muted">· periode ini</span></span><strong id="netCashflow">Rp0</strong></div>
+      <div class="cashflow-summary"><span>Net Cashflow <span class="muted">· periode ini</span></span><strong id="netCashflow">Belum dimuat</strong></div>
 
       <section class="grid two-col chart-grid">
         <article class="panel">

@@ -8,6 +8,34 @@ function setup(){
  w.eval(fs.readFileSync('web/app.js','utf8').replace(/boot\(\);\s*$/,'').replace('let state =','var state ='));
  return w;
 }
+test('failed period list clears stale rows under updated summary',async()=>{
+ const w=setup(); w.transactionList.innerHTML='<p>OLD ROW</p>';
+ w.fetch=async path=>{if(path.startsWith('/api/transactions'))throw Error('offline');return {ok:true,json:async()=>({accounts:[],categories:[],period_start:'2026-09-25',period_end:'2026-10-24',total_balance:1,period_income:0,period_expense:0,net_cashflow:0})};};
+ await assert.rejects(w.loadSummary()); assert.doesNotMatch(w.transactionList.textContent,/OLD ROW/); assert.match(w.transactionList.textContent,/gagal/i);
+});
+test('authenticated summary failure keeps dashboard and retry, only 401 shows login',async()=>{
+ const w=setup();w.fetch=async p=>{if(p==='/api/me')return {ok:true,json:async()=>({})};throw Error('offline');};await w.boot();assert.equal(w.appShell.classList.contains('hidden'),false);assert.match(w.document.body.textContent,/Coba lagi/);
+ w.fetch=async()=>({ok:false,status:401,text:async()=>''});await w.boot();assert.equal(w.loginPanel.classList.contains('hidden'),false);
+});
+test('initial summary uses nonnumeric accessible pending state',async()=>{
+ const w=setup();let reject;w.fetch=()=>new Promise((_,r)=>reject=r);const p=w.loadSummary();assert.doesNotMatch(w.totalBalance.textContent,/Rp|0/);assert.match(w.dashboardStatus.textContent,/Memuat/);assert.equal(w.appShell.getAttribute('aria-busy'),'true');reject(Error('offline'));await assert.rejects(p);
+});
+test('failed submit restores keyboard focus',async()=>{
+ const w=setup();w.transactionDialog.setAttribute('open','');w.txAmount.focus();const before=w.document.activeElement;
+ await w.safeAction('Simpan transaksi',async()=>{w.document.body.tabIndex=-1;w.document.body.focus();throw Error('offline');})();assert.equal(w.document.activeElement,before);
+});
+test('zero amount has specific validation and read failures have no save warning',async()=>{
+ const w=setup();w.transactionDialog.setAttribute('open','');w.txAmount.value='0';await w.saveTransaction({preventDefault(){}});assert.match(w.transactionDialog.textContent,/lebih dari 0/);
+ w.transactionDialog.removeAttribute('open');w.globalSearchInput.value='test';w.fetch=async()=>{throw Error('offline')};await w.runGlobalSearch({preventDefault(){}});assert.match(w.document.body.textContent,/Pencarian.*gagal/);assert.doesNotMatch(w.document.querySelector('body > .action-status').textContent,/menyimpan/);
+});
+test('local empty results explain active filter',()=>{const w=setup();w.searchInput.value='absent';w.renderTransactions([]);assert.match(w.transactionList.textContent,/filter.*periode/);});
+test('nested edit returns focus inside refreshed global results dialog',async()=>{
+ const w=setup();w.globalSearchDialog.setAttribute('open','');w.transactionDialog.setAttribute('open','');w.txAmount.focus();
+ await w.safeAction('Simpan transaksi',async()=>{w.transactionDialog.removeAttribute('open');w.globalSearchResults.innerHTML='<button>Edited</button>';w.document.body.tabIndex=-1;w.document.body.focus();})();assert.ok(w.globalSearchDialog.contains(w.document.activeElement));
+});
+test('failed nested edit keeps focus in top dialog',async()=>{
+ const w=setup();w.globalSearchDialog.setAttribute('open','');w.transactionDialog.setAttribute('open','');w.txAmount.focus();await w.safeAction('Simpan',async()=>{throw Error('offline')})();assert.equal(w.document.activeElement,w.txAmount);
+});
 test('pending action suppresses duplicates and exposes safe recoverable errors',async()=>{
  const w=setup(); let calls=0, finish;
  const action=w.safeAction('test',async()=>{calls++; await new Promise(r=>finish=r); throw Error('private server detail');});

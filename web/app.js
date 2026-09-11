@@ -6,11 +6,28 @@ async function api(path, options = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    const error = new Error('Request failed');
+    error.status = res.status;
+    throw error;
+  }
   return res.json();
 }
 
 async function loadSummary(periodStart = state.selectedPeriodStart) {
+  appShell.setAttribute('aria-busy', 'true');
+  dashboardStatus.textContent = 'Memuat ringkasan dan transaksi…';
+  try {
+    await refreshSummary(periodStart);
+    dashboardStatus.textContent = '';
+  } catch (error) {
+    dashboardStatus.innerHTML = 'Data dashboard gagal dimuat. <button class="ghost" onclick="boot()">Coba lagi</button>';
+    throw error;
+  } finally {
+    appShell.setAttribute('aria-busy', 'false');
+  }
+}
+async function refreshSummary(periodStart) {
   const activeCategoryTab = state.activeCategoryTab || 'expense';
   const params = new URLSearchParams();
   if (periodStart) params.set('period_start', periodStart);
@@ -145,7 +162,8 @@ function renderPieChart(container, breakdown, emptyText) {
 
 function renderTransactions(transactions) {
   state.visible_transactions = transactions;
-  transactionList.innerHTML = renderTransactionRows(transactions);
+  transactionList.innerHTML = transactions.length ? renderTransactionRows(transactions)
+    : `<p class="muted">${searchInput.value || accountFilter.value || categoryFilter.value ? 'Tidak ada transaksi yang cocok dengan filter pada periode ini. Ubah atau kosongkan filter.' : 'Belum ada transaksi pada periode ini.'}</p>`;
 }
 
 function renderTransactionRows(transactions) {
@@ -195,7 +213,15 @@ async function refreshTransactions() {
   if (searchInput.value) params.set('query', searchInput.value);
   if (accountFilter.value) params.set('account_id', accountFilter.value);
   if (categoryFilter.value) params.set('category_id', categoryFilter.value);
-  const transactions = await api('/api/transactions?' + params.toString());
+  state.visible_transactions = [];
+  transactionList.innerHTML = '<p role="status">Memuat transaksi…</p>';
+  let transactions;
+  try {
+    transactions = await api('/api/transactions?' + params.toString());
+  } catch (error) {
+    transactionList.innerHTML = '<p role="alert">Daftar transaksi gagal dimuat. Coba lagi dengan tombol Filter.</p>';
+    throw error;
+  }
   renderTransactions(transactions.filter(tx => {
     const day = tx.occurred_at.slice(0, 10);
     return day >= state.period_start && day <= state.period_end;
@@ -298,7 +324,12 @@ function syncTransactionFields(selectedCategory = txCategory.value) {
 async function saveTransaction(event) {
   event.preventDefault();
   const type = txType.value;
-  if (!Number.isSafeInteger(parseRupiahInput(txAmount.value)) || parseRupiahInput(txAmount.value) <= 0) throw new Error('Invalid amount');
+  if (!Number.isSafeInteger(parseRupiahInput(txAmount.value)) || parseRupiahInput(txAmount.value) <= 0) {
+    const error = new Error('Invalid amount');
+    error.userMessage = 'Nominal harus berupa rupiah bulat lebih dari 0.';
+    error.field = txAmount;
+    throw error;
+  }
   const id = txId.value;
   const payload = {
     type,
@@ -426,9 +457,15 @@ async function boot() {
     loginPanel.classList.add('hidden');
     appShell.classList.remove('hidden');
     await loadSummary();
-  } catch {
-    appShell.classList.add('hidden');
-    loginPanel.classList.remove('hidden');
+  } catch (error) {
+    if (error.status === 401) {
+      appShell.classList.add('hidden');
+      loginPanel.classList.remove('hidden');
+    } else {
+      loginPanel.classList.add('hidden');
+      appShell.classList.remove('hidden');
+      dashboardStatus.innerHTML = 'Data dashboard gagal dimuat. <button class="ghost" onclick="boot()">Coba lagi</button>';
+    }
   }
 }
 let actionPending = false;
@@ -437,8 +474,8 @@ function safeAction(label, action) {
     args[0]?.preventDefault?.();
     if (actionPending) return;
     actionPending = true;
-    const scope = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
-    let status = scope.querySelector('.action-status');
+    const scope = document.activeElement.closest('dialog[open]') || [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+    let status = scope.querySelector(':scope > .action-status');
     if (!status) {
       status = document.createElement('p');
       status.className = 'action-status';
@@ -446,6 +483,7 @@ function safeAction(label, action) {
       scope.prepend(status);
     }
     status.textContent = `${label}…`;
+    let focused = document.activeElement;
     const controls = [...document.querySelectorAll('button, input, select')];
     const disabled = controls.map(el => el.disabled);
     controls.forEach(el => el.disabled = true);
@@ -453,17 +491,25 @@ function safeAction(label, action) {
     try {
       await action(...args);
       status.textContent = '';
-    } catch {
+    } catch (error) {
       if (scope.tagName === 'DIALOG' && !scope.open) document.body.prepend(status);
-      status.textContent = 'Aksi belum selesai. Periksa koneksi dan isian. Coba lagi dengan tombol aksi. Jika koneksi terputus saat menyimpan, muat ulang untuk memeriksa data sebelum mengirim ulang.';
+      status.textContent = error.userMessage || `${label} gagal. Coba lagi dengan tombol aksi.${/Simpan|Hapus/.test(label) ? ' Jika koneksi terputus, muat ulang untuk memeriksa data sebelum mengirim ulang.' : ' Periksa koneksi Anda.'}`;
+      if (error.field) focused = error.field;
     } finally {
       controls.forEach((el, i) => el.disabled = disabled[i]);
+      const openDialog = scope.tagName === 'DIALOG' && scope.open ? scope : [...document.querySelectorAll('dialog[open]')].pop();
+      if (focused.isConnected && !focused.disabled && (!focused.closest('dialog') || focused.closest('dialog').open) && (!openDialog || openDialog.contains(focused))) {
+        focused.focus();
+      } else if (openDialog) {
+        (openDialog.querySelector('[autofocus], input:not([type=hidden]), button') || openDialog).focus();
+      }
       document.body.setAttribute('aria-busy', 'false');
       actionPending = false;
     }
   };
 }
 for (const name of ['saveTransaction', 'deleteTransaction', 'saveAccount', 'saveCategory', 'deleteCategory', 'deleteAccount', 'loadTransactions', 'runGlobalSearch', 'shiftPeriod', 'login', 'saveBalance', 'selectPeriod', 'currentPeriod']) {
-  window[name] = safeAction('Memproses', window[name]);
+  const labels = {saveTransaction:'Simpan transaksi',deleteTransaction:'Hapus transaksi',saveAccount:'Simpan akun',saveCategory:'Simpan kategori',deleteCategory:'Hapus kategori',deleteAccount:'Hapus akun',loadTransactions:'Filter transaksi',runGlobalSearch:'Pencarian transaksi',shiftPeriod:'Muat periode',login:'Login',saveBalance:'Simpan saldo',selectPeriod:'Muat periode',currentPeriod:'Muat periode'};
+  window[name] = safeAction(labels[name], window[name]);
 }
 boot();
