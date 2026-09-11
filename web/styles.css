@@ -57,7 +57,10 @@ button { border: 0; cursor: pointer; }
 .ghost.danger { color: var(--danger); border-color: rgba(251,113,133,.35); }
 .account-actions { display: grid; gap: 8px; justify-items: end; text-align: right; }
 .account-actions > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
-.filters { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; min-width: 0; max-width: 100%; flex: 1 1 420px; }
+.filters input, .filters select { width: 220px; min-width: 0; max-width: 100%; flex: 1 1 180px; }
+.panel-title.wrap { flex-wrap: wrap; }
+.panel-title.wrap > h2 { min-width: 0; overflow-wrap: anywhere; }
 input, select { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; min-width: 150px; }
 .transactions { display: grid; gap: 9px; }
 .tx-type { text-transform: capitalize; }
@@ -101,6 +104,8 @@ dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(8px); }
   .hero .primary, .hero .secondary { width: 100%; }
   .cards { grid-template-columns: 1fr; }
   .panel-title { flex-direction: column; align-items: stretch; }
+  .filters { flex: none; }
+  .filters input, .filters select { flex: 1 1 100%; }
   .filters, .filters input, .filters select, .filters button { width: 100%; }
   .row { align-items: flex-start; }
   .account-row, .transaction-row { flex-direction: column; }
@@ -164,7 +169,19 @@ h1 { font-size: clamp(28px, 4vw, 44px); letter-spacing: -.04em; }
 .row, .legend-row { background: #f3f3f1; border-color: transparent; }
 .pie { box-shadow: inset 0 0 0 18px rgba(255,255,255,.35); }
 .income { color: #3c694c; }
-input, select { color: var(--text); }
+input, select { color: var(--text); border-color: #85817a; min-height: 44px; min-width: 0; max-width: 100%; }
+button, .ghost.small, .period-arrow { min-height: 44px; min-width: 44px; }
+button:disabled { opacity: .6; cursor: wait; }
+.row > div, .legend-row, .pie-legend { min-width: 0; overflow-wrap: anywhere; }
+.period-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+.period-tools label { display: grid; gap: 4px; font-size: 13px; }
+.balance-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+.card .balance-badge, .card .card-caption { font-size: 13px; }
+.action-status { padding: 12px; margin: 0; color: #74322f; background: #fff3ed; overflow-wrap: anywhere; }
+.action-status:empty { display: none; }
+dialog { max-height: 90dvh; overflow-y: auto; }
+.period-nav { flex-wrap: wrap; }
+.account-carousel:focus-visible { outline: 3px solid #635080; outline-offset: 3px; }
 button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #9383bb; outline-offset: 3px; }
 @media (max-width: 860px) {
   .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "balance balance" "expense income"; gap: 12px; }
