@@ -87,9 +87,13 @@ function formatDateLong(value) {
   return parseYmd(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
+function accountPalette(id) {
+  return Array.from(String(id)).reduce((hash, char) => (hash * 31 + char.codePointAt(0)) >>> 0, 0) % 5;
+}
+
 function renderAccounts() {
   accountList.innerHTML = state.accounts.map(account => `
-    <div class="row account-row">
+    <div class="row account-row" data-palette="${accountPalette(account.id)}">
       <div>
         <strong>${escapeHtml(account.name)}</strong>
         <small>${escapeHtml(account.type)}</small>

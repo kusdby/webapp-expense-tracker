@@ -8,6 +8,17 @@ function setup(){
  w.eval(fs.readFileSync('web/app.js','utf8').replace(/boot\(\);\s*$/,'').replace('let state =','var state ='));
  return w;
 }
+test('account cards retain ID-based pastel identity after removal and reorder',()=>{
+ const w=setup(); w.state.accounts=[1,2,3,4,5].map(id=>({id,name:'DEMO '+id,type:'bank',balance:9000000000000000}));
+ w.renderAccounts();
+ const colors=[...w.accountList.children].map(el=>el.dataset.palette);
+ assert.equal(new Set(colors).size,5);
+ assert.ok(colors.every(c=>/^[0-4]$/.test(c)));
+ w.state.accounts=w.state.accounts.slice(1).reverse();w.renderAccounts();
+ assert.deepEqual([...w.accountList.children].map(el=>el.dataset.palette),colors.slice(1).reverse());
+ assert.equal(w.accountList.querySelectorAll('button').length,8);
+ assert.doesNotMatch(w.accountList.textContent,/expiry|visa|mastercard|••••/i);
+});
 test('failed period list clears stale rows under updated summary',async()=>{
  const w=setup(); w.transactionList.innerHTML='<p>OLD ROW</p>';
  w.fetch=async path=>{if(path.startsWith('/api/transactions'))throw Error('offline');return {ok:true,json:async()=>({accounts:[],categories:[],period_start:'2026-09-25',period_end:'2026-10-24',total_balance:1,period_income:0,period_expense:0,net_cashflow:0})};};

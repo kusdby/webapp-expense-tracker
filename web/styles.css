@@ -120,11 +120,22 @@ dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(8px); }
 /* Detail: account carousel above grouped category cards. */
 .detail-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
 .detail-grid > .panel { min-width: 0; }
-.account-carousel { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px; scroll-snap-type: x proximity; }
-.account-carousel > .account-row { flex: 0 0 min(420px, 85%); min-width: 0; min-height: 148px; flex-direction: column; align-items: stretch; scroll-snap-align: start; }
-.account-carousel .account-actions { display: flex; flex-direction: row-reverse; justify-content: space-between; align-items: end; gap: 12px; width: 100%; }
-.account-carousel .account-actions > strong { overflow-wrap: anywhere; }
-.account-carousel .account-actions > div { flex-wrap: nowrap; }
+.account-carousel { display: flex; gap: 16px; overflow-x: auto; padding: 4px 4px 14px; scroll-snap-type: x proximity; }
+.account-carousel > .account-row { flex: 0 0 min(380px, 88%); min-width: 0; min-height: 224px; padding: clamp(18px, 3vw, 26px); border: 0; border-radius: 24px; flex-direction: column; align-items: stretch; justify-content: space-between; gap: 28px; scroll-snap-align: start; color: #24362d; background: #b9ded5; }
+.account-carousel > [data-palette="1"] { background: #cce2f3; }
+.account-carousel > [data-palette="2"] { background: #f4d5c2; }
+.account-carousel > [data-palette="3"] { background: #e1d8ef; }
+.account-carousel > [data-palette="4"] { background: #f4e5ac; }
+.account-carousel .account-row > div > strong { font-size: 1.05rem; line-height: 1.4; }
+.account-carousel .account-row small { color: #3e5147; margin-top: 5px; }
+.account-carousel .account-actions { display: flex; flex-direction: column; align-items: stretch; gap: 18px; width: 100%; text-align: left; }
+.account-carousel .account-actions > strong { font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2; letter-spacing: -.035em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.account-carousel .account-actions > div { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
+.account-carousel .account-actions button { flex: 0 1 auto; min-width: 44px; min-height: 44px; background: transparent; color: #24362d; border: 1px solid #526357; border-radius: 10px; }
+.account-carousel .account-actions .danger { color: #74322f; border-color: #74322f; }
+.account-carousel .account-actions button:hover { background: #fff; }
+.account-carousel .account-actions button:active { background: #f1f0ee; }
+.account-carousel .account-actions button:focus-visible { outline: 3px solid #24362d; outline-offset: 2px; }
 .detail-grid .category-panel { padding-bottom: 18px; }
 .category-group + .category-group { margin-top: 24px; }
 .category-group h3 { margin: 8px 0 14px; font-size: 15px; }
