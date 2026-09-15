@@ -128,12 +128,20 @@ function renderCategories() {
   }
 }
 
+function safeCategoryColor(value) {
+  return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : '#64748b';
+}
+
+function categoryChip(name, color) {
+  return `<span class="category-chip" style="--category-color:${safeCategoryColor(color)}"><i class="category-swatch" aria-hidden="true"></i><span>${escapeHtml(name || 'Tanpa kategori')}</span></span>`;
+}
+
 function renderCategoryList(categories, emptyText) {
   return categories.map(category => `
     <div class="row account-row category-item">
       <div style="width:100%">
         <div class="between">
-          <strong>${escapeHtml(category.name)}</strong>
+          <strong>${categoryChip(category.name, category.color)}</strong>
         </div>
       </div>
       <div class="account-actions">
@@ -160,7 +168,7 @@ function renderPieChart(container, breakdown, emptyText) {
   const segments = breakdown.map(item => {
     const start = current;
     current += item.percentage;
-    return `${escapeHtml(item.color || '#64748b')} ${start}% ${current}%`;
+    return `${safeCategoryColor(item.color)} ${start}% ${current}%`;
   }).join(', ');
   container.innerHTML = `
     <div class="pie-wrap">
@@ -168,7 +176,7 @@ function renderPieChart(container, breakdown, emptyText) {
       <div class="pie-legend" role="list">
         ${breakdown.map(item => `
           <div class="legend-row" role="listitem">
-            <span><i style="background:${escapeHtml(item.color || '#64748b')}"></i>${escapeHtml(item.name)}</span>
+            <span><i style="background:${safeCategoryColor(item.color)}"></i>${escapeHtml(item.name)}</span>
             <strong>${item.percentage}%</strong>
             <small>${rupiah.format(item.amount)}</small>
           </div>
@@ -187,11 +195,12 @@ function renderTransactions(transactions) {
 function renderTransactionRows(transactions) {
   return transactions.map(tx => {
     const account = tx.type === 'income' ? tx.destination_account_name : tx.source_account_name;
+    const category = state.categories.find(item => item.id === tx.category_id);
     return `
       <div class="row transaction-row">
         <div>
           <strong class="${tx.type}">${tx.type}</strong>
-          <small>${formatDate(tx.occurred_at)} · ${escapeHtml(account || '-')} · ${escapeHtml(tx.category_name || 'Tanpa kategori')}</small>
+          <small>${formatDate(tx.occurred_at)} · ${escapeHtml(account || '-')} · ${categoryChip(category?.name || tx.category_name, category?.color)}</small>
           <small>${escapeHtml(tx.note || '')}</small>
         </div>
         <div class="account-actions">

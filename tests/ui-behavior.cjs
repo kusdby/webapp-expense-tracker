@@ -22,6 +22,48 @@ test('category panels retain every row and expose independent overflow guidance'
  assert.equal(w.document.getElementById('expenseCategoryHint').hidden,true);
  assert.match(w.expenseCategoryList.textContent,/Belum ada/);
 });
+test('chosen category colors identify Detail and transactions for both types',()=>{
+ const w=setup();
+ for(const type of ['expense','income']){
+  const category={id:'c',name:'DEMO Makan & minum',type,color:'#ff8800'};
+  w.state.categories=[category];w.renderCategories();
+  const chip=w.document.getElementById(type+'CategoryList').querySelector('.category-chip');
+  assert.ok(chip,'Detail must show chosen category color');
+  assert.equal(chip.style.getPropertyValue('--category-color'),'#ff8800');
+  w.renderTransactions([{id:'t',type,category_id:'c',category_name:category.name,amount:1,occurred_at:'2026-08-25'}]);
+  assert.equal(w.transactionList.querySelector('.category-chip').style.getPropertyValue('--category-color'),'#ff8800');
+ }
+});
+test('invalid category colors cannot inject CSS and missing categories stay neutral',()=>{
+ const w=setup();
+ for(const color of [null,undefined,'red','#fff','#ff8800;position:fixed','url(https://invalid.example/x)','\" onmouseover=\"bad',{}]){
+  w.state.categories=[{id:'c',type:'expense',name:'<DEMO>',color}];w.renderCategories();
+  assert.equal(w.expenseCategoryList.querySelector('.category-chip').style.getPropertyValue('--category-color'),'#64748b');
+  w.renderPieChart(w.expensePie,[{name:'DEMO',color,percentage:100,amount:1}],'');
+  assert.equal(w.expensePie.querySelector('.legend-row i').style.background,'rgb(100, 116, 139)');
+  assert.doesNotMatch(w.expensePie.innerHTML,/position:fixed|url\(|onmouseover/);
+ }
+ w.renderTransactions([{id:'t',type:'expense',amount:1,occurred_at:'2026-08-25'}]);
+ assert.equal(w.transactionList.querySelector('.category-chip').style.getPropertyValue('--category-color'),'#64748b');
+ assert.match(w.transactionList.textContent,/Tanpa kategori/);
+});
+test('saved category color refreshes Detail charts transactions and open global results',async()=>{
+ const w=setup();let saved={id:'c',type:'expense',name:'DEMO',color:'#123456'};
+ const tx={id:'t',type:'expense',category_id:'c',category_name:'DEMO',amount:1,occurred_at:'2026-08-25'};
+ w.categoryDialog.close=()=>{};w.globalSearchDialog.setAttribute('open','');w.globalSearchInput.value='DEMO';
+ w.fetch=async(path,options={})=>{
+  if(options.method==='PUT')saved={...saved,...JSON.parse(options.body)};
+  return {ok:true,json:async()=>path.startsWith('/api/summary')?{accounts:[],categories:[saved],period_start:'2026-08-25',period_end:'2026-09-24',total_balance:0,period_income:0,period_expense:1,net_cashflow:-1,expense_category_breakdown:[{...saved,amount:1,percentage:100}]}:path.startsWith('/api/transactions')?[tx]:{}};
+ };
+ for(const color of ['#ff8800','#228844']){
+  w.categoryId.value='c';w.categoryName.value='DEMO';w.categoryType.value='expense';w.categoryColor.value=color;
+  await w.saveCategory({preventDefault(){},target:w.categoryDialog.querySelector('form')});
+  assert.equal(saved.color,color);
+  await w.loadSummary();
+  for(const root of [w.expenseCategoryList,w.transactionList,w.globalSearchResults])assert.equal(root.querySelector('.category-chip').style.getPropertyValue('--category-color'),color);
+  assert.equal(w.expensePie.querySelector('.legend-row i').style.background,color==='#ff8800'?'rgb(255, 136, 0)':'rgb(34, 136, 68)');
+ }
+});
 test('account cards retain ID-based pastel identity after removal and reorder',()=>{
  const w=setup(); w.state.accounts=[1,2,3,4,5].map(id=>({id,name:'DEMO '+id,type:'bank',balance:9000000000000000}));
  w.renderAccounts();
