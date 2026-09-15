@@ -8,6 +8,20 @@ function setup(){
  w.eval(fs.readFileSync('web/app.js','utf8').replace(/boot\(\);\s*$/,'').replace('let state =','var state ='));
  return w;
 }
+test('category panels retain every row and expose independent overflow guidance',()=>{
+ const w=setup();w.state.categories=['expense','income'].flatMap(type=>Array.from({length:5},(_,i)=>({id:type+i,type,name:'DEMO long category '+i,color:'#123456'})));w.renderCategories();
+ for(const type of ['expense','income']){
+  const list=w.document.getElementById(type+'CategoryList');
+  assert.equal(list.closest('.category-columns').children.length,2);
+  assert.equal(list.querySelectorAll('.category-item').length,5);
+  assert.equal(list.tabIndex,0);
+  assert.equal(w.document.getElementById(list.getAttribute('aria-describedby')).hidden,false);
+  assert.equal(list.querySelectorAll('button').length,10);
+ }
+ w.state.categories=[];w.renderCategories();
+ assert.equal(w.document.getElementById('expenseCategoryHint').hidden,true);
+ assert.match(w.expenseCategoryList.textContent,/Belum ada/);
+});
 test('account cards retain ID-based pastel identity after removal and reorder',()=>{
  const w=setup(); w.state.accounts=[1,2,3,4,5].map(id=>({id,name:'DEMO '+id,type:'bank',balance:9000000000000000}));
  w.renderAccounts();

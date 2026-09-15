@@ -137,15 +137,20 @@ dialog::backdrop { background: rgba(0,0,0,.65); backdrop-filter: blur(8px); }
 .account-carousel .account-actions button:active { background: #f1f0ee; }
 .account-carousel .account-actions button:focus-visible { outline: 3px solid #24362d; outline-offset: 2px; }
 .detail-grid .category-panel { padding-bottom: 18px; }
-.category-group + .category-group { margin-top: 24px; }
-.category-group h3 { margin: 8px 0 14px; font-size: 15px; }
-.category-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.category-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.category-group { min-width: 0; padding: 12px; border: 1px solid var(--line); border-radius: 16px; }
+.category-group h3 { margin: 0 0 12px; font-size: 1rem; }
+.category-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; max-height: 352px; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior-y: contain; }
+.category-grid:focus-visible { outline: 3px solid #635080; outline-offset: 2px; }
 .category-grid .category-item { flex-direction: column; align-items: stretch; min-width: 0; min-height: 112px; }
 .category-grid .category-item strong { overflow-wrap: anywhere; }
 .category-grid .account-actions { margin-top: auto; align-self: end; width: auto; }
 .category-grid .account-actions > div { justify-content: flex-end; }
+.category-hint { margin: 10px 0 0; font-size: .8rem; line-height: 1.4; color: var(--muted); }
+@media (min-width: 680px) {
+  .category-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (max-width: 480px) {
-  .category-grid { grid-template-columns: minmax(0, 1fr); }
   .account-carousel > .account-row { flex-basis: 92%; }
   .account-carousel .account-actions { flex-wrap: wrap; }
 }

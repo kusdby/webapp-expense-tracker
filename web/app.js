@@ -112,6 +112,20 @@ function renderAccounts() {
 function renderCategories() {
   expenseCategoryList.innerHTML = renderCategoryList(state.categories.filter(c => c.type === 'expense'), 'Belum ada kategori pengeluaran.');
   incomeCategoryList.innerHTML = renderCategoryList(state.categories.filter(c => c.type === 'income'), 'Belum ada kategori pemasukan.');
+  for (const list of [expenseCategoryList, incomeCategoryList]) {
+    const rows = [...list.querySelectorAll('.category-item')];
+    document.getElementById(list.getAttribute('aria-describedby')).hidden = rows.length <= 3;
+    const sizeList = () => {
+      const height = rows.slice(0, 3).reduce((sum, row) => sum + row.getBoundingClientRect().height, 0);
+      if (height) list.style.maxHeight = `${height + Math.max(0, Math.min(rows.length, 3) - 1) * 8}px`;
+    };
+    list.categoryObserver?.disconnect();
+    if (typeof ResizeObserver !== 'undefined') {
+      list.categoryObserver = new ResizeObserver(sizeList);
+      rows.slice(0, 3).forEach(row => list.categoryObserver.observe(row));
+    }
+    sizeList();
+  }
 }
 
 function renderCategoryList(categories, emptyText) {

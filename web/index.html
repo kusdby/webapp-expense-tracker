@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=account-cards-v1" />
+  <link rel="stylesheet" href="/styles.css?v=category-panels-v1" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -96,14 +96,18 @@
             <h2>Kategori</h2>
             <button class="ghost" onclick="openCategoryForm()">Tambah</button>
           </div>
-          <section class="category-group">
-            <h3>Expenses</h3>
-            <div id="expenseCategoryList" class="category-grid"></div>
-          </section>
-          <section class="category-group">
-            <h3>Incomes</h3>
-            <div id="incomeCategoryList" class="category-grid"></div>
-          </section>
+          <div class="category-columns">
+            <section class="category-group" aria-labelledby="expenseCategoryHeading">
+              <h3 id="expenseCategoryHeading">Expenses</h3>
+              <div id="expenseCategoryList" class="category-grid" role="region" tabindex="0" aria-labelledby="expenseCategoryHeading" aria-describedby="expenseCategoryHint"></div>
+              <p id="expenseCategoryHint" class="category-hint" hidden>Gulir untuk kategori lainnya. Gunakan tombol panah saat daftar terfokus.</p>
+            </section>
+            <section class="category-group" aria-labelledby="incomeCategoryHeading">
+              <h3 id="incomeCategoryHeading">Incomes</h3>
+              <div id="incomeCategoryList" class="category-grid" role="region" tabindex="0" aria-labelledby="incomeCategoryHeading" aria-describedby="incomeCategoryHint"></div>
+              <p id="incomeCategoryHint" class="category-hint" hidden>Gulir untuk kategori lainnya. Gunakan tombol panah saat daftar terfokus.</p>
+            </section>
+          </div>
         </article>
       </section>
       </div>
@@ -230,6 +234,6 @@
       <div class="actions"><button type="button" class="ghost" onclick="balanceDialog.close()">Batal</button><button class="primary" type="submit">Simpan saldo</button></div>
     </form>
   </dialog>
-  <script src="/app.js?v=account-cards-v1"></script>
+  <script src="/app.js?v=category-panels-v1"></script>
 </body>
 </html>
