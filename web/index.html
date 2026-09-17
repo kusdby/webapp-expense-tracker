@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=category-colors-v1" />
+  <link rel="stylesheet" href="/styles.css?v=minimal-flat-v1" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
     <form class="modal login-card" onsubmit="login(event)">
       <p class="eyebrow">Private finance app</p>
-      <h1>Login dulu</h1>
-      <p class="muted">Masuk dengan akun yang sudah dikonfigurasi. Jangan bagikan username/password ke siapa pun.</p>
+      <h1>Expense Tracker</h1>
+      <p class="muted">Masuk untuk mencatat transaksi dan melihat saldo akunmu.</p>
       <label>Username
         <input id="loginUsername" autocomplete="username" required />
       </label>
@@ -19,7 +19,7 @@
         <input id="loginPassword" type="password" autocomplete="current-password" required />
       </label>
       <button class="primary" type="submit">Masuk</button>
-      <p id="loginError" class="error"></p>
+      <p id="loginError" class="error" role="alert"></p>
     </form>
   </section>
 
@@ -27,7 +27,7 @@
     <p id="dashboardStatus" role="status" aria-live="polite"></p>
     <header class="hero">
       <div>
-        <p class="eyebrow">Personal Finance Dashboard</p>
+        <p class="eyebrow">Keuangan pribadi</p>
         <h1>Expense Tracker</h1>
         <div id="periodNavigator" class="period-nav" aria-label="Navigasi periode">
           <button class="period-arrow" type="button" onclick="shiftPeriod(-1)" aria-label="Periode sebelumnya">←</button>
@@ -37,7 +37,7 @@
         <div class="period-tools"><button class="ghost" onclick="currentPeriod()">Periode ini</button><label>Mulai periode <input id="periodPicker" type="month" onchange="selectPeriod(this.value)" /></label></div>
       </div>
       <div class="hero-actions">
-        <button id="globalSearchButton" class="secondary icon-button" type="button" onclick="openGlobalSearch()" aria-label="Cari transaksi global">🔍</button>
+        <button id="globalSearchButton" class="secondary icon-button" type="button" onclick="openGlobalSearch()" aria-label="Cari transaksi global"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg></button>
         <button id="detailToggleButton" class="secondary" onclick="showDetailPage()">Detail</button>
         <button class="primary" onclick="openTransactionForm()">+ Transaksi</button>
       </div>
@@ -47,7 +47,7 @@
       <div id="dashboardPage">
       <section class="cards" aria-label="Ringkasan keuangan">
         <article class="card balance-card">
-          <div class="balance-heading"><span>Total Saldo</span><span class="balance-badge">Semua akun <span aria-hidden="true">↗</span></span></div>
+          <div class="balance-heading"><span>Total Saldo</span><span class="balance-badge">Semua akun</span></div>
           <strong id="totalBalance">Belum dimuat</strong>
           <span class="card-caption">Saldo gabungan seluruh akunmu</span>
         </article>
@@ -67,13 +67,13 @@
       <section class="grid two-col chart-grid">
         <article class="panel">
           <div class="panel-title">
-            <h2>Dashboard Pengeluaran</h2>
+            <h2>Pengeluaran per kategori</h2>
           </div>
           <div id="expensePie" class="pie-panel"></div>
         </article>
         <article class="panel">
           <div class="panel-title">
-            <h2>Dashboard Pemasukan</h2>
+            <h2>Pemasukan per kategori</h2>
           </div>
           <div id="incomePie" class="pie-panel"></div>
         </article>
@@ -122,6 +122,7 @@
             <button class="ghost" onclick="loadTransactions()">Filter</button>
           </div>
         </div>
+        <div class="ledger-heading" aria-hidden="true"><span>Transaksi / akun / kategori</span><span>Nominal &amp; tindakan</span></div>
         <div id="transactionList" class="transactions"></div>
       </section>
     </main>
@@ -234,6 +235,6 @@
       <div class="actions"><button type="button" class="ghost" onclick="balanceDialog.close()">Batal</button><button class="primary" type="submit">Simpan saldo</button></div>
     </form>
   </dialog>
-  <script src="/app.js?v=category-colors-v1"></script>
+  <script src="/app.js?v=minimal-flat-v1"></script>
 </body>
 </html>
