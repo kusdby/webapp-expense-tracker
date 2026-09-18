@@ -2,12 +2,41 @@ const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {JSDOM}=require('/kit/node_modules/jsdom');
-function setup(){
+function setup(preference, storageUnavailable=false){
  const dom=new JSDOM(fs.readFileSync('web/index.html','utf8'),{runScripts:'outside-only',url:'http://localhost'});
  const w=dom.window; w.fetch=async()=>({ok:true,json:async()=>({})});
+ if(preference!==undefined)w.localStorage.setItem('finance.hideAmounts',preference);
+ if(storageUnavailable)Object.defineProperty(w,'localStorage',{get(){throw Error('storage blocked')}});
  w.eval(fs.readFileSync('web/app.js','utf8').replace(/boot\(\);\s*$/,'').replace('let state =','var state ='));
  return w;
 }
+test('privacy toggle masks every semantic amount without network, focus loss or form mutation',async()=>{
+ const w=setup(); const tx={id:'t',type:'expense',amount:98765,occurred_at:'2026-08-25'};
+ w.fetch=async p=>({ok:true,json:async()=>p.startsWith('/api/summary')?{accounts:[{id:'a',name:'DEMO',balance:98765}],categories:[],period_start:'2026-08-25',period_end:'2026-09-24',total_balance:98765,period_income:98765,period_expense:98765,net_cashflow:-98765,expense_category_breakdown:[{name:'DEMO',amount:98765,percentage:100}]}:[tx]});
+ await w.loadSummary(); w.renderGlobalSearchResults([tx]);
+ const amounts=()=>[...w.document.querySelectorAll('.money-amount')];
+ assert.equal(amounts().length,8);
+ const original=amounts().map(x=>x.textContent);const button=w.document.getElementById('balanceVisibilityButton');button.focus();w.txAmount.value='98765';
+ w.fetch=()=>{throw Error('toggle must not fetch')};w.toggleBalanceVisibility();
+ assert.ok(amounts().every(x=>x.textContent==='****'));
+ assert.ok(amounts().every(x=>!x.title&&!x.getAttribute('aria-label')));
+ assert.equal(w.document.activeElement,button);assert.equal(w.txAmount.value,'98765');
+ assert.equal(button.getAttribute('aria-label'),'Tampilkan nominal');assert.equal(button.getAttribute('aria-pressed'),'true');
+ assert.equal(w.localStorage.getItem('finance.hideAmounts'),'true');
+ w.renderTransactions([tx]);w.renderAccounts();w.renderGlobalSearchResults([tx]);w.showDetailPage();
+ assert.ok(amounts().every(x=>x.textContent==='****'));assert.match(w.expensePie.textContent,/100%/);
+ w.toggleBalanceVisibility();assert.deepEqual(amounts().map(x=>x.textContent),original);
+ assert.equal(button.getAttribute('aria-label'),'Sembunyikan nominal');assert.equal(button.getAttribute('aria-pressed'),'false');
+});
+test('privacy preference loads before first amount render and tolerates unavailable storage',()=>{
+ for(const [preference,blocked,hidden] of [[undefined,false,false],['true',false,true],['false',false,false],['invalid',false,false],[undefined,true,false]]){
+  const w=setup(preference,blocked);
+  assert.equal(w.moneyText(12345),hidden?'****':'Rp 12.345');
+  assert.equal(w.balanceVisibilityButton.getAttribute('aria-pressed'),String(hidden));
+  assert.doesNotThrow(()=>w.toggleBalanceVisibility());
+  assert.equal(w.moneyText(12345),hidden?'Rp 12.345':'****');
+ }
+});
 test('category panels retain every row and expose independent overflow guidance',()=>{
  const w=setup();w.state.categories=['expense','income'].flatMap(type=>Array.from({length:5},(_,i)=>({id:type+i,type,name:'DEMO long category '+i,color:'#123456'})));w.renderCategories();
  for(const type of ['expense','income']){

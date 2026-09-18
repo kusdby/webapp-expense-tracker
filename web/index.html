@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Expense Tracker</title>
-  <link rel="stylesheet" href="/styles.css?v=minimal-flat-v1" />
+  <link rel="stylesheet" href="/styles.css?v=balance-visibility-v1" />
 </head>
 <body>
   <section id="loginPanel" class="login-panel">
@@ -48,7 +48,12 @@
       <section class="cards" aria-label="Ringkasan keuangan">
         <article class="card balance-card">
           <div class="balance-heading"><span>Total Saldo</span><span class="balance-badge">Semua akun</span></div>
-          <strong id="totalBalance">Belum dimuat</strong>
+          <div class="balance-value-row">
+            <strong id="totalBalance">Belum dimuat</strong>
+            <button id="balanceVisibilityButton" class="ghost balance-visibility" type="button" onclick="toggleBalanceVisibility()" aria-label="Sembunyikan nominal" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" focusable="false"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path class="eye-strike" d="m3 3 18 18"/></svg>
+            </button>
+          </div>
           <span class="card-caption">Saldo gabungan seluruh akunmu</span>
         </article>
         <article class="card expense-card">
@@ -235,6 +240,6 @@
       <div class="actions"><button type="button" class="ghost" onclick="balanceDialog.close()">Batal</button><button class="primary" type="submit">Simpan saldo</button></div>
     </form>
   </dialog>
-  <script src="/app.js?v=minimal-flat-v1"></script>
+  <script src="/app.js?v=balance-visibility-v1"></script>
 </body>
 </html>

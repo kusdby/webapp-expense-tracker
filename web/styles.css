@@ -53,6 +53,13 @@ strong { font-variant-numeric: tabular-nums; }
 .card strong { font-size: clamp(1.2rem, 3vw, 1.8rem); line-height: 1.15; letter-spacing: -.045em; overflow-wrap: anywhere; }
 .balance-card { grid-area: balance; border-bottom: 1px solid var(--line); padding-block: 24px; }
 .balance-card strong { font-size: clamp(2rem, 4.5vw, 3.65rem); font-weight: 550; }
+.balance-value-row { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 12px; align-items: center; }
+.balance-value-row > strong { min-width: 0; }
+.card .money-amount { font-size: inherit; }
+.balance-visibility { width: 44px; height: 44px; padding: 10px; border-color: transparent; display: grid; place-items: center; }
+.balance-visibility svg { width: 22px; height: 22px; }
+.balance-visibility .eye-strike { display: none; }
+.balance-visibility[aria-pressed="true"] .eye-strike { display: initial; }
 .balance-heading { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
 .card .balance-badge, .card .card-caption { color: var(--muted); font-size: .75rem; }
 .expense-card { grid-area: expense; }

@@ -1,5 +1,26 @@
 let state = { accounts: [], categories: [], recent_transactions: [], visible_transactions: [], activeCategoryTab: 'expense', selectedPeriodStart: null };
 const rupiah = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
+let amountsHidden = false;
+try { amountsHidden = localStorage.getItem('finance.hideAmounts') === 'true'; } catch (_) { /* Default visible when storage is unavailable. */ }
+function moneyText(amount) { return amountsHidden ? '****' : rupiah.format(amount); }
+function renderMoney(amount) {
+  const value = Number(amount);
+  return `<span class="money-amount" data-money="${value}">${moneyText(value)}</span>`;
+}
+function updateBalanceVisibilityButton() {
+  const button = document.getElementById('balanceVisibilityButton');
+  button.setAttribute('aria-pressed', String(amountsHidden));
+  button.setAttribute('aria-label', amountsHidden ? 'Tampilkan nominal' : 'Sembunyikan nominal');
+}
+function toggleBalanceVisibility() {
+  amountsHidden = !amountsHidden;
+  document.querySelectorAll('.money-amount').forEach(node => {
+    node.textContent = moneyText(Number(node.dataset.money));
+  });
+  updateBalanceVisibilityButton();
+  try { localStorage.setItem('finance.hideAmounts', String(amountsHidden)); } catch (_) { /* Session-only when storage is blocked. */ }
+}
+updateBalanceVisibilityButton();
 
 async function api(path, options = {}) {
   const res = await fetch(path, {
@@ -35,10 +56,10 @@ async function refreshSummary(periodStart) {
   state = await api(query ? `/api/summary?${query}` : '/api/summary');
   state.activeCategoryTab = activeCategoryTab;
   state.selectedPeriodStart = state.period_start;
-  totalBalance.textContent = rupiah.format(state.total_balance);
-  periodExpense.textContent = rupiah.format(state.period_expense);
-  periodIncome.textContent = rupiah.format(state.period_income);
-  netCashflow.textContent = rupiah.format(state.net_cashflow);
+  totalBalance.innerHTML = renderMoney(state.total_balance);
+  periodExpense.innerHTML = renderMoney(state.period_expense);
+  periodIncome.innerHTML = renderMoney(state.period_income);
+  netCashflow.innerHTML = renderMoney(state.net_cashflow);
   periodText.textContent = formatPeriodRange(state.period_start, state.period_end);
   renderAccounts();
   renderCategories();
@@ -99,7 +120,7 @@ function renderAccounts() {
         <small>${escapeHtml(account.type)}</small>
       </div>
       <div class="account-actions">
-        <strong>${rupiah.format(account.balance)}</strong>
+        <strong>${renderMoney(account.balance)}</strong>
         <div>
           <button type="button" class="ghost small" onclick='editAccountBalance(${JSON.stringify(account.id)}, ${escapeHtml(JSON.stringify(account.name))}, ${account.balance})'>Edit saldo</button>
           <button type="button" class="ghost small danger" onclick='deleteAccount(${JSON.stringify(account.id)}, ${escapeHtml(JSON.stringify(account.name))})'>Hapus</button>
@@ -178,7 +199,7 @@ function renderPieChart(container, breakdown, emptyText) {
           <div class="legend-row" role="listitem">
             <span><i style="background:${safeCategoryColor(item.color)}"></i>${escapeHtml(item.name)}</span>
             <strong>${item.percentage}%</strong>
-            <small>${rupiah.format(item.amount)}</small>
+            <small>${renderMoney(item.amount)}</small>
           </div>
         `).join('')}
       </div>
@@ -204,7 +225,7 @@ function renderTransactionRows(transactions) {
           <small>${escapeHtml(tx.note || '')}</small>
         </div>
         <div class="account-actions">
-          <strong>${rupiah.format(tx.amount)}</strong>
+          <strong>${renderMoney(tx.amount)}</strong>
           <div>
             <button type="button" class="ghost small" onclick='editTransaction(${JSON.stringify(tx.id)})'>Edit</button>
             <button type="button" class="ghost small danger" onclick='deleteTransaction(${JSON.stringify(tx.id)})'>Hapus</button>
@@ -378,7 +399,7 @@ async function saveTransaction(event) {
 
 async function deleteTransaction(transactionId) {
   const tx = (state.global_transactions || []).find(item => item.id === transactionId) || state.visible_transactions.find(item => item.id === transactionId) || state.recent_transactions.find(item => item.id === transactionId);
-  const label = tx ? `${tx.type} ${rupiah.format(tx.amount)}` : 'transaksi ini';
+  const label = tx ? `${tx.type} ${moneyText(tx.amount)}` : 'transaksi ini';
   if (!confirm(`Hapus ${label}? Saldo akun akan dihitung ulang otomatis.`)) return;
   await api(`/api/transactions/${transactionId}`, { method: 'DELETE' });
   await loadSummary();

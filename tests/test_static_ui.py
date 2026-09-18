@@ -20,7 +20,7 @@ class StaticUiTests(unittest.TestCase):
         self.assertNotIn('[data-palette=', css)
         self.assertIn('.ledger-heading', css)
         self.assertIn('class="ledger-heading"', html)
-        self.assertIn('minimal-flat-v1', html)
+        self.assertIn('balance-visibility-v1', html)
         self.assertIn('grid-template-areas: "balance balance" "expense income";', css)
         self.assertNotIn('Account number', html)
         self.assertNotIn('Expire date', html)
