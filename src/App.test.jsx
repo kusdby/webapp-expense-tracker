@@ -54,6 +54,10 @@ describe('React finance frontend', () => {
     expect(screen.getByRole('button', { name: /Pilih periode, sekarang 25 Agustus 2026 - 24 September 2026/ })).toBeInTheDocument();
     expect(screen.getByLabelText('Pilih bulan mulai periode')).toHaveClass('period-picker-input');
     expect(screen.queryByText('Mulai periode')).not.toBeInTheDocument();
+    const periodRow = screen.getByLabelText('Navigasi periode').parentElement;
+    expect(periodRow).toHaveClass('period-row');
+    expect(periodRow.children[0]).toHaveClass('period-nav');
+    expect(periodRow.children[1]).toHaveTextContent('Periode ini');
     expect(screen.getByText(/Rp\s*1\.300\.000/)).toBeInTheDocument();
     expect(screen.getByText('DEMO makan siang')).toBeInTheDocument();
     expect(screen.queryByText('old period')).not.toBeInTheDocument();

@@ -54,13 +54,14 @@ input[type="color"].ui-input { padding: 5px; }
 .hero > div:first-child { display: grid; gap: 0; }
 .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .hero-actions .ui-button:last-child { flex: 1; }
-.period-nav { display: flex; align-items: center; gap: 10px; margin-top: 26px; padding: 6px; border: 1px solid var(--line); background: var(--white); border-radius: 999px; box-shadow: 0 1px 0 rgb(0 0 0 / .03); }
-.period-range-button { flex: 1; min-width: 0; min-height: 44px; border: 0; border-radius: 999px; padding: 10px 12px; background: transparent; color: var(--ink-soft); text-align: center; font-weight: 670; font-size: .86rem; cursor: pointer; overflow-wrap: anywhere; }
+.period-row { display: flex; align-items: stretch; gap: 10px; margin-top: 26px; min-width: 0; }
+.period-nav { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 6px; border: 1px solid var(--line); background: var(--white); border-radius: 999px; box-shadow: 0 1px 0 rgb(0 0 0 / .03); }
+.period-range-button { flex: 1 1 auto; min-width: 0; min-height: 44px; border: 0; border-radius: 999px; padding: 10px 12px; background: transparent; color: var(--ink-soft); text-align: center; font-weight: 670; font-size: .86rem; line-height: 1.2; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .period-range-button:hover { background: var(--surface-2); }
-.period-picker-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.period-compact { display: none; }
+.period-picker-input { position: absolute; inline-size: 1px !important; block-size: 1px !important; min-width: 0 !important; max-width: 1px !important; padding: 0 !important; border: 0 !important; opacity: 0; pointer-events: none; clip-path: inset(50%); overflow: hidden; }
 .period-nav .ui-button { border: 0; background: var(--surface-2); flex: 0 0 auto; }
-.period-tools { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin-top: 12px; }
-.period-tools .field { flex: 1; min-width: 160px; }
+.current-period-button { flex: 0 0 auto; align-self: stretch; white-space: nowrap; }
 .ui-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px; min-width: 0; box-shadow: 0 1px 0 rgb(0 0 0 / .03); }
 .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "balance balance" "expense income"; gap: 12px; margin-bottom: 18px; }
 .cards .ui-card { display: grid; gap: 12px; align-content: start; }
@@ -127,6 +128,19 @@ input[type="color"].ui-input { padding: 5px; }
 .modal { display: grid; gap: 16px; }
 .actions { display: flex; gap: 10px; margin-top: 12px; justify-content: flex-end; }
 .actions .ui-button { flex: 1; }
+@media (max-width: 520px) {
+  .period-nav { gap: 6px; padding: 4px; }
+  .period-nav .ui-button { min-width: 40px; min-height: 40px; padding: 8px; }
+  .period-range-button { min-height: 40px; padding-inline: 6px; font-size: .8rem; }
+  .period-full { display: none; }
+  .period-compact { display: inline; }
+}
+@media (max-width: 360px) {
+  .period-row { gap: 8px; }
+  .period-nav { gap: 4px; }
+  .period-range-button { font-size: .76rem; }
+  .current-period-button { min-height: 50px; padding-inline: 12px; font-size: .9rem; }
+}
 @media (min-width: 580px) {
   .app-shell { padding: 34px 28px 48px; }
   .hero-actions .ui-button:last-child { flex: initial; }

@@ -8,7 +8,7 @@ class StaticUiTests(unittest.TestCase):
     def test_react_build_entry_and_version(self):
         html = (ROOT / "web" / "index.html").read_text()
         self.assertIn('id="root"', html)
-        self.assertIn('react-shadcn-bw-period-picker-v1', html)
+        self.assertIn('react-shadcn-bw-period-row-v1', html)
         self.assertIn('/assets/index-', html)
         self.assertIn('<script type="module"', html)
         self.assertNotIn('/app.js', html)

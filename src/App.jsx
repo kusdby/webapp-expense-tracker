@@ -15,6 +15,7 @@ function parseYmd(value) { const [y, m, d] = String(value).slice(0, 10).split('-
 function toYmd(date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
 function addMonths(value, offset) { const d = parseYmd(value); return new Date(d.getFullYear(), d.getMonth() + offset, d.getDate()); }
 function formatDateLong(value) { return value ? parseYmd(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) : 'Loading periode...'; }
+function formatDateCompact(value) { return value ? parseYmd(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) : 'Loading'; }
 function formatDate(value) { return value ? new Date(value).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; }
 function parseRupiahInput(value) { if (!/^-?(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(String(value).trim())) return NaN; const cleaned = String(value).replace(/\./g, '').trim(); if (!cleaned || cleaned === '-') return NaN; const number = Number(cleaned); return Number.isSafeInteger(number) ? number : NaN; }
 function accountPalette(id) { return Array.from(String(id)).reduce((hash, char) => (hash * 31 + char.codePointAt(0)) >>> 0, 0) % 5; }
@@ -109,6 +110,7 @@ export default function App() {
 
   const categoryById = useMemo(() => Object.fromEntries(summary.categories.map(c => [c.id, c])), [summary.categories]);
   const periodText = summary.period_start ? `${formatDateLong(summary.period_start)} - ${formatDateLong(summary.period_end)}` : 'Loading periode...';
+  const periodCompactText = summary.period_start ? `${formatDateCompact(summary.period_start)} - ${formatDateCompact(summary.period_end)}` : 'Loading';
 
   if (auth === 'login') return <main className="login-panel"><form className="login-card" onSubmit={login}><p className="eyebrow">Private finance app</p><h1>Expense Tracker</h1><p className="muted">Masuk untuk mencatat transaksi dan melihat saldo akunmu.</p><Field label="Username"><Input name="username" autoComplete="username" required /></Field><Field label="Password"><Input name="password" type="password" autoComplete="current-password" required /></Field><Button type="submit">Masuk</Button><p className="error" role="alert">{loginError}</p><p role="status">{actionStatus}</p></form></main>;
 
@@ -118,23 +120,26 @@ export default function App() {
       <div>
         <p className="eyebrow">Keuangan pribadi</p>
         <h1>Expense Tracker</h1>
-        <div className="period-nav" aria-label="Navigasi periode">
-          <Button variant="outline" type="button" aria-label="Periode sebelumnya" onClick={() => shiftPeriod(-1)}>←</Button>
-          <button className="period-range-button" type="button" onClick={openPeriodPicker} aria-label={`Pilih periode, sekarang ${periodText}`}>
-            {periodText}
-          </button>
-          <input
-            ref={periodPickerRef}
-            className="period-picker-input"
-            type="month"
-            aria-label="Pilih bulan mulai periode"
-            tabIndex={-1}
-            value={summary.period_start?.slice(0, 7) || ''}
-            onChange={e => selectPeriod(e.target.value)}
-          />
-          <Button variant="outline" type="button" aria-label="Periode berikutnya" onClick={() => shiftPeriod(1)}>→</Button>
+        <div className="period-row">
+          <div className="period-nav" aria-label="Navigasi periode">
+            <Button variant="outline" type="button" aria-label="Periode sebelumnya" onClick={() => shiftPeriod(-1)}>←</Button>
+            <button className="period-range-button" type="button" onClick={openPeriodPicker} aria-label={`Pilih periode, sekarang ${periodText}`}>
+              <span className="period-full">{periodText}</span>
+              <span className="period-compact">{periodCompactText}</span>
+            </button>
+            <input
+              ref={periodPickerRef}
+              className="period-picker-input"
+              type="month"
+              aria-label="Pilih bulan mulai periode"
+              tabIndex={-1}
+              value={summary.period_start?.slice(0, 7) || ''}
+              onChange={e => selectPeriod(e.target.value)}
+            />
+            <Button variant="outline" type="button" aria-label="Periode berikutnya" onClick={() => shiftPeriod(1)}>→</Button>
+          </div>
+          <Button className="current-period-button" variant="outline" onClick={currentPeriod}>Periode ini</Button>
         </div>
-        <div className="period-tools"><Button variant="outline" onClick={currentPeriod}>Periode ini</Button></div>
       </div>
       <div className="hero-actions"><Button variant="outline" aria-label="Cari transaksi global" onClick={() => { setModal('search'); setGlobalQuery(''); setGlobalResults([]); }}><Search size={18} /></Button><Button variant="outline" onClick={() => setDetail(v => !v)}>{detail ? 'Dashboard' : 'Detail'}</Button><Button onClick={() => { setFormError(''); setModal('transaction'); }}>+ Transaksi</Button></div>
     </header>
