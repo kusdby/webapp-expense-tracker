@@ -8,7 +8,7 @@ class StaticUiTests(unittest.TestCase):
     def test_react_build_entry_and_version(self):
         html = (ROOT / "web" / "index.html").read_text()
         self.assertIn('id="root"', html)
-        self.assertIn('react-shadcn-v1', html)
+        self.assertIn('react-shadcn-bw-elegant-v1', html)
         self.assertIn('/assets/index-', html)
         self.assertIn('<script type="module"', html)
         self.assertNotIn('/app.js', html)
@@ -35,9 +35,11 @@ class StaticUiTests(unittest.TestCase):
 
     def test_minimal_flat_theme_and_responsive_detail_layout(self):
         css = (ROOT / "src" / "styles.css").read_text()
-        self.assertIn('--bg: #eeedea;', css)
-        self.assertIn('--expense: #a44320;', css)
-        self.assertIn('--income: #286344;', css)
+        self.assertIn('--bg: #f6f6f4;', css)
+        self.assertIn('--black: #050505;', css)
+        self.assertIn('--white: #ffffff;', css)
+        self.assertIn('--expense: #7f1d1d;', css)
+        self.assertIn('--income: #14532d;', css)
         self.assertEqual(css.count(':root {'), 1)
         self.assertNotIn('linear-gradient', css)
         self.assertIn('.balance-card', css)
