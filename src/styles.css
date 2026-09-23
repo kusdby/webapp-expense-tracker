@@ -55,8 +55,10 @@ input[type="color"].ui-input { padding: 5px; }
 .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .hero-actions .ui-button:last-child { flex: 1; }
 .period-nav { display: flex; align-items: center; gap: 10px; margin-top: 26px; padding: 6px; border: 1px solid var(--line); background: var(--white); border-radius: 999px; box-shadow: 0 1px 0 rgb(0 0 0 / .03); }
-.period-nav span { flex: 1; text-align: center; font-weight: 670; font-size: .86rem; color: var(--ink-soft); }
-.period-nav .ui-button { border: 0; background: var(--surface-2); }
+.period-range-button { flex: 1; min-width: 0; min-height: 44px; border: 0; border-radius: 999px; padding: 10px 12px; background: transparent; color: var(--ink-soft); text-align: center; font-weight: 670; font-size: .86rem; cursor: pointer; overflow-wrap: anywhere; }
+.period-range-button:hover { background: var(--surface-2); }
+.period-picker-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.period-nav .ui-button { border: 0; background: var(--surface-2); flex: 0 0 auto; }
 .period-tools { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; margin-top: 12px; }
 .period-tools .field { flex: 1; min-width: 160px; }
 .ui-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px; min-width: 0; box-shadow: 0 1px 0 rgb(0 0 0 / .03); }

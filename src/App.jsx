@@ -49,6 +49,7 @@ export default function App() {
   const [actionStatus, setActionStatus] = useState('');
   const [formError, setFormError] = useState('');
   const amountRef = useRef(null);
+  const periodPickerRef = useRef(null);
 
   useEffect(() => { boot(); }, []);
 
@@ -83,6 +84,12 @@ export default function App() {
   }
   async function shiftPeriod(offset) { await loadSummary(toYmd(addMonths(summary.period_start, offset))); }
   async function selectPeriod(value) { if (value) await loadSummary(`${value}-${String(summary.reset_day || 25).padStart(2, '0')}`); }
+  function openPeriodPicker() {
+    const picker = periodPickerRef.current;
+    if (!picker) return;
+    if (typeof picker.showPicker === 'function') picker.showPicker();
+    else picker.focus();
+  }
   async function currentPeriod() { await loadSummary(null); }
   async function applyFilters(event) { event.preventDefault(); await loadTransactions(summary, filters); }
   async function runGlobalSearch(event) { event.preventDefault(); const rows = globalQuery.trim() ? await api(`/api/transactions?${new URLSearchParams({ query: globalQuery.trim() })}`) : []; setGlobalResults(rows); }
@@ -107,7 +114,30 @@ export default function App() {
 
   return <div className="app-shell" aria-busy={Boolean(status)}>
     <p role="status" aria-live="polite" className="status-line">{status}</p>
-    <header className="hero"><div><p className="eyebrow">Keuangan pribadi</p><h1>Expense Tracker</h1><div className="period-nav" aria-label="Navigasi periode"><Button variant="outline" type="button" aria-label="Periode sebelumnya" onClick={() => shiftPeriod(-1)}>←</Button><span>{periodText}</span><Button variant="outline" type="button" aria-label="Periode berikutnya" onClick={() => shiftPeriod(1)}>→</Button></div><div className="period-tools"><Button variant="outline" onClick={currentPeriod}>Periode ini</Button><Field label="Mulai periode"><Input type="month" value={summary.period_start?.slice(0, 7) || ''} onChange={e => selectPeriod(e.target.value)} /></Field></div></div><div className="hero-actions"><Button variant="outline" aria-label="Cari transaksi global" onClick={() => { setModal('search'); setGlobalQuery(''); setGlobalResults([]); }}><Search size={18} /></Button><Button variant="outline" onClick={() => setDetail(v => !v)}>{detail ? 'Dashboard' : 'Detail'}</Button><Button onClick={() => { setFormError(''); setModal('transaction'); }}>+ Transaksi</Button></div></header>
+    <header className="hero">
+      <div>
+        <p className="eyebrow">Keuangan pribadi</p>
+        <h1>Expense Tracker</h1>
+        <div className="period-nav" aria-label="Navigasi periode">
+          <Button variant="outline" type="button" aria-label="Periode sebelumnya" onClick={() => shiftPeriod(-1)}>←</Button>
+          <button className="period-range-button" type="button" onClick={openPeriodPicker} aria-label={`Pilih periode, sekarang ${periodText}`}>
+            {periodText}
+          </button>
+          <input
+            ref={periodPickerRef}
+            className="period-picker-input"
+            type="month"
+            aria-label="Pilih bulan mulai periode"
+            tabIndex={-1}
+            value={summary.period_start?.slice(0, 7) || ''}
+            onChange={e => selectPeriod(e.target.value)}
+          />
+          <Button variant="outline" type="button" aria-label="Periode berikutnya" onClick={() => shiftPeriod(1)}>→</Button>
+        </div>
+        <div className="period-tools"><Button variant="outline" onClick={currentPeriod}>Periode ini</Button></div>
+      </div>
+      <div className="hero-actions"><Button variant="outline" aria-label="Cari transaksi global" onClick={() => { setModal('search'); setGlobalQuery(''); setGlobalResults([]); }}><Search size={18} /></Button><Button variant="outline" onClick={() => setDetail(v => !v)}>{detail ? 'Dashboard' : 'Detail'}</Button><Button onClick={() => { setFormError(''); setModal('transaction'); }}>+ Transaksi</Button></div>
+    </header>
     <main>
       {!detail && <><section className="cards" aria-label="Ringkasan keuangan"><Card className="balance-card"><div className="balance-heading"><span>Total Saldo</span><span className="balance-badge">Semua akun</span></div><div className="balance-value-row"><strong><Money amount={summary.total_balance} hidden={hidden} /></strong><Button variant="ghost" className="balance-visibility" type="button" onClick={toggleHidden} aria-label={hidden ? 'Tampilkan nominal' : 'Sembunyikan nominal'} aria-pressed={hidden}>{hidden ? <EyeOff size={22} /> : <Eye size={22} />}</Button></div><span className="card-caption">Saldo gabungan seluruh akunmu</span></Card><Card className="expense-card"><span className="metric-label">Expenses</span><strong><Money amount={summary.period_expense} hidden={hidden} /></strong><span className="card-caption">Pengeluaran periode</span></Card><Card className="income-card"><span className="metric-label">Incomes</span><strong><Money amount={summary.period_income} hidden={hidden} /></strong><span className="card-caption">Pemasukan periode</span></Card></section><div className="cashflow-summary"><span>Net Cashflow <span className="muted">· periode ini</span></span><strong><Money amount={summary.net_cashflow} hidden={hidden} /></strong></div><section className="grid two-col chart-grid"><Pie title="Pengeluaran per kategori" rows={summary.expense_category_breakdown} hidden={hidden} empty="Belum ada data pengeluaran periode ini." /><Pie title="Pemasukan per kategori" rows={summary.income_category_breakdown} hidden={hidden} empty="Belum ada data pemasukan periode ini." /></section></>}
       {detail && <section className="grid detail-grid"><Card><div className="panel-title"><h2>Akun Saldo</h2><Button variant="outline" onClick={() => setModal('account')}>Tambah</Button></div><p className="muted swipe-hint">Geser daftar akun ke samping untuk melihat akun lainnya.</p><div className="account-carousel" tabIndex={0} aria-label="Daftar akun saldo, geser untuk akun lainnya">{summary.accounts.length ? summary.accounts.map(a => <div className="row account-row" data-palette={accountPalette(a.id)} key={a.id}><div><strong>{a.name}</strong><small>{a.type}</small></div><div className="account-actions"><strong><Money amount={a.balance} hidden={hidden} /></strong><div><Button variant="outline" size="sm" onClick={() => setModal({ type: 'balance', account: a })}>Edit saldo</Button><Button variant="danger" size="sm" onClick={() => remove('accounts', a.id)}>Hapus</Button></div></div></div>) : <p className="muted">Belum ada akun.</p>}</div></Card><Card><div className="panel-title"><h2>Kategori</h2><Button variant="outline" onClick={() => setModal('category')}>Tambah</Button></div><div className="category-columns"><CategoryList type="expense" categories={summary.categories} onEdit={c => setModal({ type: 'category', category: c })} onDelete={id => remove('categories', id)} /><CategoryList type="income" categories={summary.categories} onEdit={c => setModal({ type: 'category', category: c })} onDelete={id => remove('categories', id)} /></div></Card></section>}
