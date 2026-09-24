@@ -1,11 +1,24 @@
 import tempfile
 import unittest
+from pathlib import Path
 
 from app.repository import FinanceRepository
 
 
 class FinanceRepositoryTests(unittest.TestCase):
-    def test_user_can_create_custom_accounts_categories_and_transactions(self):
+    def test_initial_user_starts_with_clean_finance_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = FinanceRepository(str(Path(tmp) / "finance.db"))
+            repo.initialize()
+
+            user_id = repo.ensure_initial_user("friend", "strong-password", name="Friend")
+
+            self.assertEqual(repo.list_accounts(user_id), [])
+            self.assertEqual(repo.list_categories(user_id), [])
+            self.assertEqual(repo.list_transactions(user_id), [])
+            self.assertEqual(repo.get_reset_day(user_id), 25)
+
+    def test_create_and_list_accounts_categories_transactions(self):
         with tempfile.NamedTemporaryFile() as db:
             repo = FinanceRepository(db.name)
             repo.initialize()
@@ -27,16 +40,14 @@ class FinanceRepositoryTests(unittest.TestCase):
             self.assertEqual(len(filtered), 1)
             self.assertEqual(filtered[0]["note"], "makan")
 
-    def test_transfer_is_seeded_as_income_category_not_transaction_type(self):
+    def test_initial_user_does_not_seed_transfer_or_transactions(self):
         with tempfile.NamedTemporaryFile() as db:
             repo = FinanceRepository(db.name)
             repo.initialize()
             user_id = repo.ensure_initial_user("test-admin", "test-password", "Test Admin")
 
-            categories = repo.list_categories(user_id)
-            category_pairs = {category["name"]: category["type"] for category in categories}
-            self.assertEqual(category_pairs["Transfer"], "income")
-            self.assertNotIn("transfer", [tx["type"] for tx in repo.list_transactions(user_id)])
+            self.assertEqual(repo.list_categories(user_id), [])
+            self.assertEqual(repo.list_transactions(user_id), [])
 
     def test_existing_user_gets_transfer_income_category_once(self):
         with tempfile.NamedTemporaryFile() as db:

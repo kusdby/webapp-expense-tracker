@@ -42,11 +42,32 @@ try:
     opener.open(req, timeout=2).read()
     summary = json.loads(opener.open("http://127.0.0.1:8098/api/summary", timeout=2).read())
     assert summary["reset_day"] == 25
-    assert summary["total_balance"] == 3_525_000
-    assert "transfer" not in {tx["type"] for tx in summary["recent_transactions"]}
-    assert any(category["name"] == "Transfer" and category["type"] == "income" for category in summary["categories"])
-    assert len(summary["accounts"]) == 3
-    print("smoke ok", summary["total_balance"], summary["reset_day"], len(summary["accounts"]))
+    assert summary["total_balance"] == 0
+    assert summary["accounts"] == []
+    assert summary["categories"] == []
+    assert summary["recent_transactions"] == []
+
+    def request(path, payload, method="POST"):
+        req = urllib.request.Request(
+            f"http://127.0.0.1:8098{path}",
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+            method=method,
+        )
+        return json.loads(opener.open(req, timeout=2).read())
+
+    account = request("/api/accounts", {"name": "Test Cash", "type": "cash", "initial_balance": "100000"})
+    category = request("/api/categories", {"name": "Test Income", "type": "income", "color": "#228844", "icon": ""})
+    request(
+        "/api/transactions",
+        {"type": "income", "amount": "25000", "destination_account_id": account["id"], "source_account_id": "", "category_id": category["id"], "note": "smoke"},
+    )
+    summary = json.loads(opener.open("http://127.0.0.1:8098/api/summary", timeout=2).read())
+    assert summary["total_balance"] == 125_000
+    assert len(summary["accounts"]) == 1
+    assert len(summary["categories"]) == 1
+    assert len(summary["recent_transactions"]) == 1
+    print("smoke ok clean", summary["total_balance"], summary["reset_day"], len(summary["accounts"]))
 finally:
     proc.terminate()
     try:

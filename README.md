@@ -13,8 +13,9 @@ Sudah ada:
 - Transfer mengurangi sumber dan menambah tujuan
 - Salary-cycle period default tanggal 25
 - Dashboard summary API
-- Responsive vanilla frontend
+- React + shadcn/ui-style responsive frontend
 - SQLite persistence
+- User baru mulai dari data kosong: tidak ada akun/kategori/transaksi dummy yang otomatis dibuat
 
 ## Run Lokal
 
