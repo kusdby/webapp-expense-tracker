@@ -7,3 +7,5 @@ __pycache__/
 node_modules/
 dist/
 .vite/
+scripts/deploy_ui_audit.py
+scripts/ui_fixture.py
