@@ -116,15 +116,6 @@ class FinanceRepository:
                 self.migrate_legacy_transfer_transactions(user_id)
                 return user_id
         user_id = self.create_user(name or username, username, password=password)
-        bri = self.create_account(user_id, "BRI", "bank", 1_000_000, color="#3b82f6")
-        jenius = self.create_account(user_id, "Jenius", "bank", 500_000, color="#06b6d4")
-        gopay = self.create_account(user_id, "GoPay", "e-wallet", 100_000, color="#22c55e")
-        food = self.create_category(user_id, "Makan & Minum", "expense", color="#fb7185")
-        salary = self.create_category(user_id, "Gaji", "income", color="#34d399")
-        transfer = self.ensure_transfer_income_category(user_id)
-        self.create_transaction(user_id, "income", 2_000_000, destination_account_id=jenius, category_id=salary, note="Gajian")
-        self.create_transaction(user_id, "expense", 125_000, source_account_id=bri, category_id=food, note="Makan siang")
-        self.create_transaction(user_id, "income", 50_000, destination_account_id=gopay, category_id=transfer, note="Top up GoPay")
         self.migrate_legacy_transfer_transactions(user_id)
         return user_id
 

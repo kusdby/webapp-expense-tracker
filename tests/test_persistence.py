@@ -20,7 +20,8 @@ class PersistenceTests(unittest.TestCase):
                     repo = FinanceRepository(path)
                     repo.initialize()
                     uid = repo.ensure_initial_user('test', 'password')
-                    transfer = next(c for c in repo.list_categories(uid) if c['name'] == 'Transfer')
+                    transfer_id = repo.create_category(uid, 'Transfer', 'income')
+                    transfer = next(c for c in repo.list_categories(uid) if c['id'] == transfer_id)
                     if action == 'delete':
                         self.assertTrue(repo.delete_category(uid, transfer['id']))
                     else:
@@ -82,8 +83,10 @@ class PersistenceTests(unittest.TestCase):
             deleted_tx = repo.create_transaction(uid, 'income', 20, destination_account_id=account)
             repo.delete_transaction(uid, deleted_tx)
             repo.set_account_balance(uid, account, 789)
-            repo.delete_account(uid, repo.list_accounts(uid)[0]['id'])
-            repo.delete_category(uid, next(c['id'] for c in repo.list_categories(uid) if c['name'] == 'Makan & Minum'))
+            deleted_account = repo.create_account(uid, 'Temporary wallet', 'cash', 0)
+            repo.delete_account(uid, deleted_account)
+            deleted_category = repo.create_category(uid, 'Temporary category', 'expense')
+            repo.delete_category(uid, deleted_category)
             expected = self.snapshot(path)
             for _ in range(3):
                 repo = FinanceRepository(path)
