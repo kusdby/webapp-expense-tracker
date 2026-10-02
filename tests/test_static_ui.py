@@ -8,7 +8,7 @@ class StaticUiTests(unittest.TestCase):
     def test_react_build_entry_and_version(self):
         html = (ROOT / "web" / "index.html").read_text()
         self.assertIn('id="root"', html)
-        self.assertIn('finance-pwa-v1.0.0', html)
+        self.assertIn('finance-pwa-v1.0.1', html)
         self.assertIn('/assets/index-', html)
         self.assertIn('<script type="module"', html)
         self.assertNotIn('/app.js', html)
@@ -60,7 +60,8 @@ class StaticUiTests(unittest.TestCase):
         self.assertIn('apple-mobile-web-app-status-bar-style', source_html)
         self.assertIn('apple-touch-icon', source_html)
         self.assertIn('apple-touch-icon.png', source_html)
-        self.assertIn('theme-color', source_html)
+        self.assertIn('maximum-scale=1', source_html)
+        self.assertIn('user-scalable=no', source_html)
         self.assertIn('"display": "standalone"', manifest)
         self.assertIn('"start_url": "/"', manifest)
         self.assertIn('"purpose": "any maskable"', manifest)
