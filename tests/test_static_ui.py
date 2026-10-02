@@ -8,7 +8,7 @@ class StaticUiTests(unittest.TestCase):
     def test_react_build_entry_and_version(self):
         html = (ROOT / "web" / "index.html").read_text()
         self.assertIn('id="root"', html)
-        self.assertIn('react-shadcn-bw-period-row-v1', html)
+        self.assertIn('finance-pwa-v1.0.0', html)
         self.assertIn('/assets/index-', html)
         self.assertIn('<script type="module"', html)
         self.assertNotIn('/app.js', html)
@@ -47,6 +47,28 @@ class StaticUiTests(unittest.TestCase):
         self.assertIn('.category-columns', css)
         self.assertIn('grid-template-columns: repeat(2, minmax(0, 1fr));', css)
         self.assertIn('max-height: 352px;', css)
+        self.assertIn('env(safe-area-inset-top)', css)
+
+    def test_pwa_installation_and_ios_shell_are_present(self):
+        source_html = (ROOT / "index.html").read_text()
+        manifest = (ROOT / "public" / "manifest.webmanifest").read_text()
+        worker = (ROOT / "public" / "service-worker.js").read_text()
+        main = (ROOT / "src" / "main.jsx").read_text()
+
+        self.assertIn('rel="manifest"', source_html)
+        self.assertIn('apple-mobile-web-app-capable', source_html)
+        self.assertIn('apple-mobile-web-app-status-bar-style', source_html)
+        self.assertIn('apple-touch-icon', source_html)
+        self.assertIn('apple-touch-icon.png', source_html)
+        self.assertIn('theme-color', source_html)
+        self.assertIn('"display": "standalone"', manifest)
+        self.assertIn('"start_url": "/"', manifest)
+        self.assertIn('"purpose": "any maskable"', manifest)
+        self.assertTrue((ROOT / "public" / "icons" / "icon-192.png").is_file())
+        self.assertTrue((ROOT / "public" / "icons" / "icon-512.png").is_file())
+        self.assertIn("serviceWorker.register('/service-worker.js')", main)
+        self.assertIn("request.url.includes('/api/')", worker)
+        self.assertNotIn('caches.match(request)', worker.split("request.url.includes('/api/')", 1)[0])
 
     def test_period_and_search_behavior_present_in_react_source(self):
         app = (ROOT / "src" / "App.jsx").read_text()

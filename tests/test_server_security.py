@@ -28,6 +28,25 @@ class ServerSecurityTests(unittest.TestCase):
                 httpd.shutdown()
                 thread.join(timeout=2)
                 httpd.server_close()
+    def test_pwa_static_assets_have_correct_mime_types(self):
+        with tempfile.NamedTemporaryFile() as db:
+            FinanceHandler.repo = FinanceRepository(db.name)
+            FinanceHandler.repo.initialize()
+            FinanceHandler.user_id = FinanceHandler.repo.ensure_initial_user("testuser", "testpass")
+            FinanceHandler.sessions = {}
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), FinanceHandler)
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                port = httpd.server_address[1]
+                manifest = urllib.request.urlopen(f"http://127.0.0.1:{port}/manifest.webmanifest", timeout=2)
+                icon = urllib.request.urlopen(f"http://127.0.0.1:{port}/icons/icon-192.png", timeout=2)
+                self.assertEqual(manifest.headers.get_content_type(), "application/manifest+json")
+                self.assertEqual(icon.headers.get_content_type(), "image/png")
+            finally:
+                httpd.shutdown()
+                thread.join(timeout=2)
+                httpd.server_close()
 
 
 if __name__ == "__main__":

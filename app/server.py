@@ -325,6 +325,12 @@ def _content_type(path: Path) -> str:
         return "text/css; charset=utf-8"
     if path.suffix == ".js":
         return "application/javascript; charset=utf-8"
+    if path.suffix == ".webmanifest":
+        return "application/manifest+json; charset=utf-8"
+    if path.suffix == ".png":
+        return "image/png"
+    if path.suffix == ".svg":
+        return "image/svg+xml"
     return "text/html; charset=utf-8"
 
 

@@ -49,7 +49,7 @@ input[type="color"].ui-input { padding: 5px; }
 .error:not(:empty) { padding: 12px 14px; color: #7f1d1d; background: #fff7f7; border: 1px solid #f2d5d5; border-radius: 14px; }
 .status-line { position: fixed; left: 50%; top: 14px; z-index: 40; transform: translateX(-50%); width: min(520px, calc(100% - 28px)); margin: 0; text-align: center; pointer-events: none; }
 .status-line:not(:empty) { padding: 11px 14px; color: var(--ink); background: rgb(255 255 255 / .92); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); }
-.app-shell { width: min(1240px, 100%); margin: 0 auto; padding: 22px 16px 40px; }
+.app-shell { width: min(1240px, 100%); margin: 0 auto; padding: max(22px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(40px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
 .hero { display: grid; gap: 22px; padding: 10px 0 26px; }
 .hero > div:first-child { display: grid; gap: 0; }
 .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
