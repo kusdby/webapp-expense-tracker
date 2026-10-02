@@ -1,5 +1,10 @@
-const CACHE_NAME = 'finance-shell-v1';
+const CACHE_NAME = 'finance-shell-v2';
 const SHELL_URLS = ['/', '/manifest.webmanifest', '/icons/apple-touch-icon.png', '/icons/icon-192.png', '/icons/icon-512.png'];
+
+const cacheResponse = (key, response) => {
+  if (!response.ok) return Promise.resolve();
+  return caches.open(CACHE_NAME).then((cache) => cache.put(key, response.clone()));
+};
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS)).then(() => self.skipWaiting()));
@@ -14,19 +19,19 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
-  if (request.method !== 'GET' || url.origin !== self.location.origin || request.url.includes('/api/')) return;
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
 
+  const network = fetch(request);
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).then((response) => {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then((cache) => cache.put('/', copy));
-      return response;
-    }).catch(() => caches.match('/')));
+    event.respondWith(network.catch(() => caches.match('/')));
+    event.waitUntil(network.then((response) => cacheResponse('/', response)).catch(() => undefined));
     return;
   }
 
-  event.respondWith(caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-    if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
-    return response;
-  })));
+  event.respondWith(caches.match(request).then((cached) => cached || network));
+  event.waitUntil(network.then((response) => cacheResponse(request, response)).catch(() => undefined));
 });

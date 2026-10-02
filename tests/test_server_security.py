@@ -2,6 +2,7 @@ import os
 import tempfile
 import threading
 import unittest
+import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
 
@@ -43,6 +44,26 @@ class ServerSecurityTests(unittest.TestCase):
                 icon = urllib.request.urlopen(f"http://127.0.0.1:{port}/icons/icon-192.png", timeout=2)
                 self.assertEqual(manifest.headers.get_content_type(), "application/manifest+json")
                 self.assertEqual(icon.headers.get_content_type(), "image/png")
+            finally:
+                httpd.shutdown()
+                thread.join(timeout=2)
+                httpd.server_close()
+    def test_api_responses_are_never_cached(self):
+        with tempfile.NamedTemporaryFile() as db:
+            FinanceHandler.repo = FinanceRepository(db.name)
+            FinanceHandler.repo.initialize()
+            FinanceHandler.user_id = FinanceHandler.repo.ensure_initial_user("testuser", "testpass")
+            FinanceHandler.sessions = {}
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), FinanceHandler)
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                port = httpd.server_address[1]
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    urllib.request.urlopen(f"http://127.0.0.1:{port}/api/summary", timeout=2)
+                self.assertEqual(error.exception.code, 401)
+                self.assertEqual(error.exception.headers["Cache-Control"], "no-store, max-age=0")
+                self.assertEqual(error.exception.headers["Pragma"], "no-cache")
             finally:
                 httpd.shutdown()
                 thread.join(timeout=2)

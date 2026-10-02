@@ -67,8 +67,9 @@ class StaticUiTests(unittest.TestCase):
         self.assertTrue((ROOT / "public" / "icons" / "icon-192.png").is_file())
         self.assertTrue((ROOT / "public" / "icons" / "icon-512.png").is_file())
         self.assertIn("serviceWorker.register('/service-worker.js')", main)
-        self.assertIn("request.url.includes('/api/')", worker)
-        self.assertNotIn('caches.match(request)', worker.split("request.url.includes('/api/')", 1)[0])
+        self.assertIn("url.pathname.startsWith('/api/')", worker)
+        self.assertIn('event.waitUntil', worker)
+        self.assertNotIn('caches.match(request)', worker.split("url.pathname.startsWith('/api/')", 1)[0])
 
     def test_period_and_search_behavior_present_in_react_source(self):
         app = (ROOT / "src" / "App.jsx").read_text()
