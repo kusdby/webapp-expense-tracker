@@ -126,6 +126,7 @@ class FinanceHandler(BaseHTTPRequestHandler):
                 destination_account_id=data.get("destination_account_id") or None,
                 category_id=data.get("category_id") or None,
                 note=data.get("note", ""),
+                occurred_at=_parse_datetime(data.get("occurred_at")),
             )
             self._json({"id": tx_id}, HTTPStatus.CREATED)
             return

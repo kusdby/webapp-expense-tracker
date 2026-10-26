@@ -132,6 +132,49 @@ class ServerAccountsApiTests(unittest.TestCase):
                 thread.join(timeout=2)
                 httpd.server_close()
 
+    def test_transaction_api_persists_date_on_create_and_edit(self):
+        with tempfile.NamedTemporaryFile() as db:
+            FinanceHandler.repo = FinanceRepository(db.name)
+            FinanceHandler.repo.initialize()
+            user_id = FinanceHandler.repo.create_user("Test User", "test-user", password="secret123")
+            account_id = FinanceHandler.repo.create_account(user_id, "BCA", "bank", 1_000_000)
+            category_id = FinanceHandler.repo.create_category(user_id, "Makan", "expense")
+            FinanceHandler.sessions = {}
+            httpd = ThreadingHTTPServer(("127.0.0.1", 0), FinanceHandler)
+            thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+            thread.start()
+            try:
+                base_url = f"http://127.0.0.1:{httpd.server_address[1]}"
+                cookie = self._login(base_url)
+                created = self._json_request(
+                    f"{base_url}/api/transactions",
+                    method="POST",
+                    payload={
+                        "type": "expense", "amount": 50_000, "source_account_id": account_id,
+                        "category_id": category_id, "note": "tanggal pilihan", "occurred_at": "2026-02-14",
+                    },
+                    cookie=cookie,
+                )
+                tx_id = created["id"]
+                transactions = self._json_request(f"{base_url}/api/transactions", cookie=cookie)
+                self.assertEqual(transactions[0]["occurred_at"], "2026-02-14T00:00:00")
+
+                self._json_request(
+                    f"{base_url}/api/transactions/{tx_id}",
+                    method="PUT",
+                    payload={
+                        "type": "expense", "amount": 50_000, "source_account_id": account_id,
+                        "category_id": category_id, "note": "tanggal diubah", "occurred_at": "2026-02-16",
+                    },
+                    cookie=cookie,
+                )
+                transactions = self._json_request(f"{base_url}/api/transactions", cookie=cookie)
+                self.assertEqual(transactions[0]["occurred_at"], "2026-02-16T00:00:00")
+            finally:
+                httpd.shutdown()
+                thread.join(timeout=2)
+                httpd.server_close()
+
     def test_transfer_transaction_type_is_rejected_via_api(self):
         with tempfile.NamedTemporaryFile() as db:
             FinanceHandler.repo = FinanceRepository(db.name)

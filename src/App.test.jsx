@@ -91,6 +91,21 @@ describe('React finance frontend', () => {
     await waitFor(() => expect(within(dialog).getByText('old period')).toBeInTheDocument());
   });
 
+  it('shows a calendar date for new transactions and keeps the saved date while editing', async () => {
+    const today = new Date();
+    const expectedToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    render(<App />);
+    await screen.findByText('DEMO makan siang');
+    await userEvent.click(screen.getByRole('button', { name: /Transaksi/ }));
+    expect(screen.getByLabelText('Tanggal transaksi')).toHaveAttribute('type', 'date');
+    expect(screen.getByLabelText('Tanggal transaksi')).toHaveValue(expectedToday);
+    await userEvent.click(screen.getByRole('button', { name: 'Batal' }));
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    expect(screen.getByRole('heading', { name: 'Edit Transaksi' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Tanggal transaksi')).toHaveValue('2026-08-25');
+  });
+
   it('exercises login failure, CRUD payloads, validation, focus recovery and period controls', async () => {
     global.fetch = vi.fn((url, options = {}) => {
       const path = String(url);
@@ -123,6 +138,8 @@ describe('React finance frontend', () => {
     await userEvent.selectOptions(screen.getByLabelText('Kategori'), 'c1');
     await userEvent.click(screen.getByRole('button', { name: 'Simpan' }));
     await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/transactions', expect.objectContaining({ method: 'POST' })));
+    const transactionRequest = global.fetch.mock.calls.find(([url, options]) => url === '/api/transactions' && options?.method === 'POST');
+    expect(JSON.parse(transactionRequest[1].body).occurred_at).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     await userEvent.click(screen.getByRole('button', { name: 'Periode sebelumnya' }));
     expect(global.fetch).toHaveBeenCalledWith('/api/summary?period_start=2026-07-25', expect.any(Object));
   });
