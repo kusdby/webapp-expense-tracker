@@ -49,6 +49,12 @@ class StaticUiTests(unittest.TestCase):
         self.assertIn('max-height: 352px;', css)
         self.assertIn('env(safe-area-inset-top)', css)
 
+    def test_narrow_viewport_does_not_force_horizontal_overflow(self):
+        css = (ROOT / "src" / "styles.css").read_text()
+        self.assertNotIn("body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif; min-width: 320px; }", css)
+        self.assertIn(".dialog-backdrop { position: fixed; inset: 0;", css)
+        self.assertIn("width: min(500px, 100%);", css)
+
     def test_pwa_installation_and_ios_shell_are_present(self):
         source_html = (ROOT / "index.html").read_text()
         manifest = (ROOT / "public" / "manifest.webmanifest").read_text()

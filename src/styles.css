@@ -21,7 +21,7 @@
 }
 * { box-sizing: border-box; }
 html { background: var(--bg); }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; min-width: 320px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.5 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button, input, select { font: inherit; }
 button { -webkit-tap-highlight-color: transparent; }
 h1, h2, h3, p { overflow-wrap: anywhere; }
