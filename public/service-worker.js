@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finance-shell-v2';
+const CACHE_NAME = 'finance-shell-v3';
 const SHELL_URLS = ['/', '/manifest.webmanifest', '/icons/apple-touch-icon.png', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 const cacheResponse = (key, response) => {

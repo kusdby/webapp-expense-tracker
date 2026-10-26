@@ -55,6 +55,11 @@ class StaticUiTests(unittest.TestCase):
         self.assertIn(".dialog-backdrop { position: fixed; inset: 0;", css)
         self.assertIn("width: min(500px, 100%);", css)
 
+    def test_pwa_cache_version_invalidates_old_mobile_shell(self):
+        worker = (ROOT / "public" / "service-worker.js").read_text()
+        self.assertIn("const CACHE_NAME = 'finance-shell-v3';", worker)
+        self.assertNotIn("finance-shell-v2", worker)
+
     def test_pwa_installation_and_ios_shell_are_present(self):
         source_html = (ROOT / "index.html").read_text()
         manifest = (ROOT / "public" / "manifest.webmanifest").read_text()
